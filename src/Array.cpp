@@ -7,24 +7,24 @@
 #include <xuanwu/DataCopy.h>
 #include <xuanwu/Device.h>
 #include <xuanwu/Allocator.h>
-#include <xuanwu/Car.h>
+#include <xuanwu/Xuanwu.h>
 
 ArrayBase::ArrayBase(size_t bytes)
-        : allocator_(Car::GetCPUDevice()->GetAllocator()),
-          device_(Car::GetCPUDevice()) {
+        : allocator_(Xuanwu::GetCPUDevice()->GetAllocator()),
+          device_(Xuanwu::GetCPUDevice()) {
     Allocate(bytes);
 }
 
 ArrayBase::ArrayBase(const ArrayBase &that) :
-        allocator_(Car::GetCPUDevice()->GetAllocator()),
-        device_(Car::GetCPUDevice()) {
+        allocator_(Xuanwu::GetCPUDevice()->GetAllocator()),
+        device_(Xuanwu::GetCPUDevice()) {
     Allocate(that.bytes_);
     CopyFrom(that);
 }
 
 ArrayBase::ArrayBase(void *ptr, size_t bytes) : //copy from cpu ptr
-        allocator_(Car::GetCPUDevice()->GetAllocator()),
-        device_(Car::GetCPUDevice()) {
+        allocator_(Xuanwu::GetCPUDevice()->GetAllocator()),
+        device_(Xuanwu::GetCPUDevice()) {
     Allocate(bytes);
     DataCopy(this->ptr_, this->device_->Id(), ptr, -1, this->bytes_);
 }

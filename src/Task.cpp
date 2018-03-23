@@ -26,10 +26,10 @@ void TaskBase::PrepareData(DevicePtr dev, cudaStream_t stream) {
 }
 
 TaskBase::TaskBase(std::string name, std::unique_ptr<CPUTask> cputask, std::unique_ptr<GPUTask> gputask) :
-        engine_(Car::Get()), name_(std::move(name)), cputask_(std::move(cputask)), gputask_(std::move(gputask)) {
+        engine_(Xuanwu::Get()), name_(std::move(name)), cputask_(std::move(cputask)), gputask_(std::move(gputask)) {
 }
 
 TaskBase::TaskBase(std::string name) :
-        engine_(Car::Get()), name_(std::move(name)) {
+        engine_(Xuanwu::Get()), name_(std::move(name)) {
 }
 

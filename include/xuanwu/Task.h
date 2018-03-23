@@ -12,7 +12,7 @@
 
 #include "defs.h"
 #include "cuda_utils.h"
-#include "Car.h"
+#include "Xuanwu.h"
 
 //enum Flag {
 //    Default = 0,

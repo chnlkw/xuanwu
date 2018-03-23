@@ -7,7 +7,7 @@
 
 #include "defs.h"
 
-class Car {
+class Xuanwu {
 private:
     static std::shared_ptr<Engine> engine;
 
@@ -15,6 +15,7 @@ public:
     static void Set(std::shared_ptr<Engine> e) { engine = e; }
 
     static Engine &Get();
+    static bool Tick();
 
     static DevicePtr GetCPUDevice();
 

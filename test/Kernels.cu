@@ -6,6 +6,7 @@
 //#include "Worker.h"
 //#include "Task.h"
 
+#if 0
 template<class T, class TOff>
 __global__ void shuffle_by_idx_kernel(T *dst, const T *src, const TOff *idx, size_t size) {
     size_t i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -28,6 +29,7 @@ shuffle_by_idx_gpu<unsigned int, size_t>(unsigned int *dst, const unsigned int *
 
 template void shuffle_by_idx_gpu<unsigned int, unsigned int>(unsigned int *, unsigned int const *, unsigned int const *,
                                                              unsigned long, cudaStream_t);
+#endif
 
 template<class T>
 __global__ void gpu_add_kernel(T *c, const T *a, const T *b, size_t size) { // c[i] = a[i] + b[i]

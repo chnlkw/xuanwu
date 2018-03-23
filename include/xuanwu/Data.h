@@ -8,7 +8,7 @@
 #include <deque>
 #include "DeviceBase.h"
 #include "DataCopy.h"
-#include "Car.h"
+#include "Xuanwu.h"
 
 class DataBase {
 protected:
@@ -107,7 +107,7 @@ public:
         Write(device);
     }
 
-    explicit Data(const std::vector<T> &vec, DevicePtr device = Car::GetCPUDevice()) :
+    explicit Data(const std::vector<T> &vec, DevicePtr device = Xuanwu::GetCPUDevice()) :
             std::shared_ptr<DataBase>(new DataBase(vec.size() * sizeof(T))) {
         Write(device);
         size_t bytes = vec.size() * sizeof(T);
@@ -116,7 +116,7 @@ public:
 
     using value_type = T;
 
-    const Array<T> &Read(DevicePtr dev = Car::GetCPUDevice()) const {
+    const Array<T> &Read(DevicePtr dev = Xuanwu::GetCPUDevice()) const {
         const Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->Read(dev));
         return ret;
     }
@@ -147,7 +147,7 @@ public:
 //        return ret;
 //    }
 
-    Array<T> &Write(DevicePtr dev = Car::GetCPUDevice(), bool keep_old = true) {
+    Array<T> &Write(DevicePtr dev = Xuanwu::GetCPUDevice(), bool keep_old = true) {
         Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->Write(dev, keep_old));
         return ret;
     }
@@ -179,7 +179,7 @@ public:
 
     std::string ToString() const {
         std::ostringstream os;
-        const T *a = Read(Car::GetCPUDevice()).data();
+        const T *a = Read(Xuanwu::GetCPUDevice()).data();
         os << "Data(" << "ptr=" << a << " count=" << size() << ": ";
         for (size_t i = 0; i < size(); i++)
             os << a[i] << ',';
