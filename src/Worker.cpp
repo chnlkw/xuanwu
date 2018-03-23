@@ -6,7 +6,6 @@
 #include "Device.h"
 #include "Task.h"
 #include "Data.h"
-#include "Engine.h"
 #include "clock.h"
 
 #define LG(x) CLOG(x, "Worker")

@@ -3,8 +3,8 @@
 //
 
 #include <cassert>
-#include "xuanwu/Array.h"
-#include "xuanwu/Data.h"
+#include "Array.h"
+#include "Data.h"
 
 #define LG(x) CLOG(x, "Data")
 

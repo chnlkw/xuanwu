@@ -11,21 +11,12 @@
 #include "Runnable.h"
 
 class DeviceBase : public el::Loggable, public std::enable_shared_from_this<DeviceBase>, public Runnable {
-    struct PriorityTask {
-        int priority;
-        TaskPtr task;
-
-        bool operator<(const PriorityTask &that) const {
-            return priority < that.priority;
-        }
-    };
-
-    std::unique_ptr <AllocatorBase> allocator_;
+    std::unique_ptr<AllocatorBase> allocator_;
 protected:
-    std::vector <std::unique_ptr<WorkerBase>> workers_;
+    std::vector<std::unique_ptr<WorkerBase>> workers_;
 
 public:
-    explicit DeviceBase(std::unique_ptr <AllocatorBase> allocator);
+    explicit DeviceBase(std::unique_ptr<AllocatorBase> allocator);
 
     virtual ~DeviceBase();
 
@@ -35,13 +26,11 @@ public:
 
     virtual int ScoreRunTask(TaskPtr t);
 
-    std::vector <TaskPtr> GetCompleteTasks() override;
+    std::vector<TaskPtr> GetCompleteTasks() override;
 
     const auto &Workers() const {
         return workers_;
     }
-
-    bool Tick();
 
     int Id() const;
 

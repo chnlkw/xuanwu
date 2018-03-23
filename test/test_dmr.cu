@@ -2,15 +2,12 @@
 #include <xuanwu/dmr/PartitionedDMR.h>
 #include <gtest/gtest.h>
 
-auto print = [](auto &x) { std::cout << " " << x; };
-auto self = [](auto x) { return x; };
-
 namespace std {
-template<class K, class V>
-std::ostream &operator<<(std::ostream &os, const std::pair<K, V> &p) {
-    os << "(" << p.first << "," << p.second << ")";
-    return os;
-};
+    template<class K, class V>
+    std::ostream &operator<<(std::ostream &os, const std::pair<K, V> &p) {
+        os << "(" << p.first << "," << p.second << ")";
+        return os;
+    };
 }
 
 void test_dmr(size_t npar, size_t num_element, int repeat) {

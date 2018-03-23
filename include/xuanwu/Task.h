@@ -58,7 +58,6 @@ class TaskBase : public std::enable_shared_from_this<TaskBase>, public el::Logga
 
     std::vector<Meta> metas_;
     bool finished = false;
-    Engine &engine_;
 
     friend class Engine;
 

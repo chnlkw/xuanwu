@@ -6,14 +6,12 @@
 #include <atomic>
 #include "Engine.h"
 #include "Task.h"
-#include "Worker.h"
 #include "Data.h"
-#include "DevicesGroup.h"
 
 #define LG(x) CLOG(x, "Engine")
 
 void TaskBase::WaitFinish() {
-    while (!IsFinished() && engine_.Tick());
+    while (!IsFinished() && Xuanwu::Tick());
     if (!IsFinished())
         throw std::runtime_error("Task unfinished, while engine ends");
 }
@@ -55,10 +53,6 @@ void Engine::AddEdge(TaskPtr src, TaskPtr dst) {
     tasks_[dst].in_degree++;
 }
 
-//Engine::Engine(std::set<WorkerPtr> workers) :
-//        workers_(std::move(workers)) {
-//}
-
 bool Engine::Tick() {
     static std::atomic<bool> ticking;
     assert(!ticking);
@@ -74,18 +68,8 @@ bool Engine::Tick() {
     }
 
     for (auto t : ready_tasks_) {
-//        std::cout << "Engine Run Task " << std::endl;
         DevicePtr d = ChooseDevice(t);
         d->RunTask(t);
-//        LG(DEBUG) << "After run task " << *t;
-//        for (auto &m : t->GetMetas()) {
-//            LG(DEBUG) << m << " replica count = " << m.data->last_state_.replicas.size();
-//            for (auto dev_arr : m.data->last_state_.replicas) {
-//                DevicePtr dev = dev_arr.first;
-//                LG(DEBUG) << "\treplica at  " << *dev;
-//            }
-//        }
-//        LG(DEBUG) << "          End";
     }
     ready_tasks_.clear();
     ticking = false;

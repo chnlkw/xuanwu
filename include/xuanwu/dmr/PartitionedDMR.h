@@ -11,9 +11,6 @@
 
 #include <algorithm>
 
-auto f_key_neq = [](auto a, auto b) { return a.first != b.first; };
-auto f_key_less = [](auto a, auto b) { return a.first < b.first; };
-
 #define LG(x) CLOG(x, "DMR")
 
 template<class TKey, class TOff, class ArrayConstructor = vector_constructor_t>

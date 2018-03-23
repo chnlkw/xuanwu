@@ -10,17 +10,12 @@
 
 class CPUDevice : public DeviceBase {
 public:
-#ifdef USE_CUDA
 
     CPUDevice();
 
     void RunTask(TaskPtr t) override;
 
     size_t NumRunningTasks() const override { return 0; }
-
-#else
-    CPUDevice() : DeviceBase(-1, AllocatorPtr(new CPUAllocator)) { }
-#endif
 
     int ScoreRunTask(TaskPtr t) override;
 };
@@ -39,26 +34,5 @@ public:
 
     int ScoreRunTask(TaskPtr t) override;
 };
-
-//class Device {
-//    static DevicePtr current;
-//    static DevicePtr cpu;
-//public:
-//    static DevicePtr Current() {
-//        printf("current device = %d\n", current->Id());
-//        return current;
-//    }
-
-//    static DevicePtr UseCPU() { return current = cpu; }
-
-//    static DevicePtr CpuDevice() { return cpu; }
-
-//    static void Use(DevicePtr dev) {
-//        current = dev;
-//    }
-
-//    static int NumGPUs();
-
-//};
 
 #endif //DMR_DEVICE_H

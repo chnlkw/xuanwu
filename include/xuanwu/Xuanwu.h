@@ -14,7 +14,6 @@ private:
 public:
     static void Set(std::shared_ptr<Engine> e) { engine = e; }
 
-    static Engine &Get();
     static bool Tick();
 
     static DevicePtr GetCPUDevice();
@@ -22,14 +21,12 @@ public:
     static void Finish() { engine.reset(); }
 
     template<class Task, class... Args>
-    static
-    TaskBase &AddTask(Args &&... args) {
+    static TaskBase &AddTask(Args &&... args) {
         auto t = std::make_shared<Task>(std::forward<Args>(args)...);
         return AddTask(t);
     }
 
-    static
-    TaskBase &AddTask(TaskPtr task);
+    static TaskBase &AddTask(TaskPtr task);
 };
 
 

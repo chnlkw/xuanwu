@@ -6,7 +6,7 @@
 #include <cstring>
 #include <iostream>
 #include <easylogging++.h>
-#include "xuanwu/DataCopy.h"
+#include "DataCopy.h"
 
 std::map<int, std::map<int, bool>> data_copy_p2p;
 

@@ -2,25 +2,12 @@
 // Created by chnlkw on 1/25/18.
 //
 
-#include "xuanwu/Device.h"
-#include "xuanwu/Worker.h"
-#include <xuanwu/Allocator.h>
-#include "xuanwu/Task.h"
+#include "Device.h"
+#include "Worker.h"
+#include "Allocator.h"
+#include "Task.h"
 
 #define LG(x) CLOG(x, "Device")
-
-//DevicePtr Device::cpu(new CPUDevice);
-//DevicePtr Device::current = Device::cpu;
-
-//int Device::NumGPUs() {
-//#ifdef USE_CUDA
-//    int count;
-//    CUDA_CALL(cudaGetDeviceCount, &count);
-//    return count;
-//#else
-//    return 0;
-//#endif
-//}
 
 GPUDevice::GPUDevice(std::unique_ptr<CudaAllocator> allocator, int num_workers) :
         DeviceBase(std::move(allocator)) {
