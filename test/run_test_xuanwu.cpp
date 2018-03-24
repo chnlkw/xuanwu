@@ -10,13 +10,14 @@
 #include "Kernels.h"
 
 namespace di = boost::di;
+using namespace Xuanwu;
 
 namespace std {
-template<class K, class V>
-std::ostream &operator<<(std::ostream &os, const std::pair<K, V> &p) {
-    os << "(" << p.first << "," << p.second << ")";
-    return os;
-};
+    template<class K, class V>
+    std::ostream &operator<<(std::ostream &os, const std::pair<K, V> &p) {
+        os << "(" << p.first << "," << p.second << ")";
+        return os;
+    };
 }
 
 TEST(Xuanwu, AddTask) {
@@ -68,6 +69,7 @@ TEST(Xuanwu, AddTask) {
 
 INITIALIZE_EASYLOGGINGPP
 
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
@@ -80,7 +82,7 @@ int main(int argc, char **argv) {
             di::bind<CudaAllocator>().to<CudaPreAllocator>(),
             di::bind<MyDeviceGroup>().to(CPUGPUGroupFactory(1, num_gpu)),
 //            di::bind<MyDeviceGroup>().to(CPUGroupFactory(2)),
-            di::bind<int>().named(NumWorkersOfGPUDevices).to(num_gpu),
+            di::bind<>.to(Config{}),
             di::bind<size_t>().named(PreAllocBytes).to(2LU << 30)
     );
     Xuanwu::Set(injector.create<std::shared_ptr<Engine>>());

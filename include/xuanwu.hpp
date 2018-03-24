@@ -12,5 +12,6 @@
 #include <xuanwu/Data.h>
 #include <xuanwu/Engine.h>
 #include <xuanwu/Worker.h>
+#include <xuanwu/Xuanwu.h>
 
 #endif //LDA_ALL_H

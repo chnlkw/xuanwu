@@ -8,5 +8,6 @@
 #include <xuanwu/Task.h>
 #include <xuanwu/Data.h>
 #include <xuanwu/Worker.h>
+#include <xuanwu/dmr/dmr.cuh>
 
 #endif //LDA_ALL_H

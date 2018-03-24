@@ -2,32 +2,31 @@
 // Created by chnlkw on 3/13/18.
 //
 
-#ifndef DMR_CAR_H
-#define DMR_CAR_H
+#ifndef XUANWU_XUANWU_H
+#define XUANWU_XUANWU_H
 
 #include "defs.h"
 
-class Xuanwu {
-private:
-    static std::shared_ptr<Engine> engine;
+namespace Xuanwu {
 
-public:
-    static void Set(std::shared_ptr<Engine> e) { engine = e; }
+    extern std::shared_ptr<Engine> engine;
 
-    static bool Tick();
+    void Set(std::shared_ptr<Engine> e);
 
-    static DevicePtr GetCPUDevice();
+    bool Tick();
 
-    static void Finish() { engine.reset(); }
+    DevicePtr GetCPUDevice();
+
+    void Finish();
 
     template<class Task, class... Args>
-    static TaskBase &AddTask(Args &&... args) {
+    TaskBase &AddTask(Args &&... args) {
         auto t = std::make_shared<Task>(std::forward<Args>(args)...);
         return AddTask(t);
     }
 
-    static TaskBase &AddTask(TaskPtr task);
-};
+    TaskBase &AddTask(TaskPtr task);
 
+}
 
-#endif //DMR_CAR_H
+#endif //XUANWU_XUANWU_H

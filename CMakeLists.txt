@@ -13,8 +13,14 @@ add_subdirectory(easyloggingpp)
 
 add_subdirectory(src)
 
-enable_testing()
+option(TEST "Build Tests" OFF)
 
-add_subdirectory(gtest)
+if (${TEST})
 
-add_subdirectory(test)
+    enable_testing()
+
+    add_subdirectory(gtest)
+
+    add_subdirectory(test)
+
+endif ()

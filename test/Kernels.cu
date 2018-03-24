@@ -4,6 +4,7 @@
 
 #include "Kernels.h"
 
+using namespace Xuanwu;
 template<class F, class... Args>
 __global__
 void kernel(F f, Args... args) {

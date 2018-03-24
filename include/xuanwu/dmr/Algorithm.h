@@ -7,12 +7,12 @@
 
 #include "xuanwu/Array.h"
 #include "xuanwu/Data.h"
-#include "Kernels.cuh"
+//#include "Kernels.cuh"
 #include "xuanwu/DataCopy.h"
 
 //void shuffle_by_idx_gpu_ff(float *dst, const float *src, const size_t *idx, size_t size);
 
-namespace Algorithm {
+namespace Xuanwu {
 
 template<class V>
 V Renew(const V &in, size_t count = 0);

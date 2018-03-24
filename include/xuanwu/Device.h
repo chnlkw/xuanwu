@@ -6,33 +6,31 @@
 #define DMR_DEVICE_H
 
 #include "DeviceBase.h"
-#include <boost/di.hpp>
+#include "Config.h"
+namespace Xuanwu {
+    class CPUDevice : public DeviceBase {
+    public:
 
-class CPUDevice : public DeviceBase {
-public:
+        CPUDevice();
 
-    CPUDevice();
+        void RunTask(TaskPtr t) override;
 
-    void RunTask(TaskPtr t) override;
+        size_t NumRunningTasks() const override { return 0; }
 
-    size_t NumRunningTasks() const override { return 0; }
+        int ScoreRunTask(TaskPtr t) override;
+    };
 
-    int ScoreRunTask(TaskPtr t) override;
-};
+    class GPUDevice : public DeviceBase {
+        size_t running_tasks_ = 0;
+    public:
+        GPUDevice(std::unique_ptr<CudaAllocator> allocator, const Config &cfg);
 
-auto NumWorkersOfGPUDevices = [] {};
+        void RunTask(TaskPtr t) override;
 
-class GPUDevice : public DeviceBase {
-    size_t running_tasks_ = 0;
-public:
-    BOOST_DI_INJECT (GPUDevice, std::unique_ptr<CudaAllocator> allocator, (named = NumWorkersOfGPUDevices)
-            int num_workers = 1);
+        size_t NumRunningTasks() const override { return running_tasks_; }
 
-    void RunTask(TaskPtr t) override;
+        int ScoreRunTask(TaskPtr t) override;
+    };
 
-    size_t NumRunningTasks() const override { return running_tasks_; }
-
-    int ScoreRunTask(TaskPtr t) override;
-};
-
+}
 #endif //DMR_DEVICE_H

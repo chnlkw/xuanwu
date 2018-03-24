@@ -10,75 +10,77 @@
 #include "Runnable.h"
 #include <deque>
 
-class WorkerBase : public el::Loggable, public Runnable {
-protected:
-    DevicePtr device_;
-    size_t id_;
-public:
-    explicit WorkerBase(DevicePtr d) : device_(d) {
-        static size_t s_id = 0;
-        id_ = s_id++;
-    }
+namespace Xuanwu {
+    class WorkerBase : public el::Loggable, public Runnable {
+    protected:
+        DevicePtr device_;
+        size_t id_;
+    public:
+        explicit WorkerBase(DevicePtr d) : device_(d) {
+            static size_t s_id = 0;
+            id_ = s_id++;
+        }
 
-    DevicePtr Device() const {
-        return device_;
-    }
+        DevicePtr Device() const {
+            return device_;
+        }
 
-    virtual void log(el::base::type::ostream_t &os) const;
-};
-
-
-class CPUWorker : public WorkerBase {
-    std::deque<TaskPtr> tasks_;
-public:
-    explicit CPUWorker(CPUDevice *cpu);
-
-    void RunTask(TaskPtr t) override {
-        tasks_.push_back(t);
-    }
-
-    bool Empty() const override { return tasks_.empty(); }
-
-    std::vector<TaskPtr> GetCompleteTasks() override;
-
-    size_t NumRunningTasks() const override { return tasks_.size(); }
-};
-
-class GPUWorker : public WorkerBase {
-    cudaStream_t stream_;
-
-    std::vector<cudaEvent_t> events_unused_;
-
-    struct Meta {
-        cudaEvent_t beg_event, transfer_event, end_event;
-        TaskPtr task;
+        virtual void log(el::base::type::ostream_t &os) const;
     };
-    std::deque<Meta> queue_;
 
-public:
-    explicit GPUWorker(GPUDevice *gpu);
 
-    bool Empty() const override {
-        return queue_.empty();
-    }
+    class CPUWorker : public WorkerBase {
+        std::deque<TaskPtr> tasks_;
+    public:
+        explicit CPUWorker(CPUDevice *cpu);
 
-    const cudaStream_t &Stream() const {
-        return stream_;
-    }
+        void RunTask(TaskPtr t) override {
+            tasks_.push_back(t);
+        }
 
-private:
+        bool Empty() const override { return tasks_.empty(); }
 
-    void RunTask(TaskPtr t) override;
+        std::vector<TaskPtr> GetCompleteTasks() override;
 
-    size_t NumRunningTasks() const override {
-        return queue_.size();
-    }
+        size_t NumRunningTasks() const override { return tasks_.size(); }
+    };
 
-    cudaEvent_t GetEvent();
+    class GPUWorker : public WorkerBase {
+        cudaStream_t stream_;
 
-    std::vector<TaskPtr> GetCompleteTasks() override;
+        std::vector<cudaEvent_t> events_unused_;
 
-};
+        struct Meta {
+            cudaEvent_t beg_event, transfer_event, end_event;
+            TaskPtr task;
+        };
+        std::deque<Meta> queue_;
 
+    public:
+        explicit GPUWorker(GPUDevice *gpu);
+
+        bool Empty() const override {
+            return queue_.empty();
+        }
+
+        const cudaStream_t &Stream() const {
+            return stream_;
+        }
+
+    private:
+
+        void RunTask(TaskPtr t) override;
+
+        size_t NumRunningTasks() const override {
+            return queue_.size();
+        }
+
+        cudaEvent_t GetEvent();
+
+        std::vector<TaskPtr> GetCompleteTasks() override;
+
+    };
+
+}
 
 #endif //DMR_WORKER_H

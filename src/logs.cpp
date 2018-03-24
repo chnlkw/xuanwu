@@ -5,24 +5,25 @@
 #include "Worker.h"
 #include "Device.h"
 #include "Task.h"
+namespace Xuanwu {
+    void TaskBase::log(el::base::type::ostream_t &os) const {
+        os << "Task[" << Name() << "]";
+        if (finished) os << " Finished";
+    }
 
-void TaskBase::log(el::base::type::ostream_t &os) const {
-    os << "Task[" << Name() << "]";
-    if (finished) os << " Finished";
+    void WorkerBase::log(el::base::type::ostream_t &os) const {
+        os << "Worker[" << id_ << ", " << *device_ << "]";
+    }
+
+    void DeviceBase::log(el::base::type::ostream_t &os) const {
+        os << "Device[" << Id() << "]";
+    }
+
+    void TaskBase::Meta::log(el::base::type::ostream_t &os) const {
+        os << "[Meta] "
+           << data << " "
+           << (is_read_only ? "R " : "W ")
+           << priority << ". ";
+    }
+
 }
-
-void WorkerBase::log(el::base::type::ostream_t &os) const {
-    os << "Worker["<< id_ << ", " << *device_ << "]";
-}
-
-void DeviceBase::log(el::base::type::ostream_t &os) const {
-    os << "Device[" << Id() << "]";
-}
-
-void TaskBase::Meta::log(el::base::type::ostream_t &os) const {
-    os << "[Meta] "
-       << data << " "
-       << (is_read_only ? "R " : "W ")
-       << priority << ". ";
-}
-

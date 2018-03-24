@@ -10,6 +10,8 @@ namespace std {
     };
 }
 
+using namespace Xuanwu;
+
 void test_dmr(size_t npar, size_t num_element, int repeat) {
     LOG(INFO) << "start test dmr npar=" << npar << " num_element=" << num_element << " repeat=" << repeat;
 

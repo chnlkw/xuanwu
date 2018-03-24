@@ -7,54 +7,55 @@
 
 #include <memory>
 #include "easylogging++.h"
+namespace Xuanwu {
+    class ArrayBase;
 
-class ArrayBase;
+    template<class T>
+    class Array;
 
-template<class T>
-class Array;
+    class AllocatorBase;
 
-class AllocatorBase;
+    class DeviceBase;
 
-class DeviceBase;
+    class Node;
 
-class Node;
+    class DataBase;
 
-class DataBase;
+    template<class T>
+    class Data;
 
-template<class T>
-class Data;
+    class TaskBase;
 
-class TaskBase;
+    class WorkerBase;
 
-class WorkerBase;
+    class CPUTask;
 
-class CPUTask;
+    class GPUTask;
 
-class GPUTask;
+    class CPUWorker;
 
-class CPUWorker;
+    class GPUWorker;
 
-class GPUWorker;
+    class Engine;
 
-class Engine;
+    using ArrayBasePtr = std::shared_ptr<ArrayBase>;
+    template<class T>
+    using ArrayPtr = std::shared_ptr<Array<T>>;
+    using AllocatorPtr = AllocatorBase *;
+    using NodePtr = std::shared_ptr<Node>;
+    using DataBasePtr = std::shared_ptr<DataBase>;
+    using TaskPtr = std::shared_ptr<TaskBase>;
 
-using ArrayBasePtr = std::shared_ptr<ArrayBase>;
-template<class T>
-using ArrayPtr = std::shared_ptr<Array<T>>;
-using AllocatorPtr = AllocatorBase *;
-using NodePtr = std::shared_ptr<Node>;
-using DataBasePtr = std::shared_ptr<DataBase>;
-using TaskPtr = std::shared_ptr<TaskBase>;
+    class GPUDevice;
 
-class GPUDevice;
+    class CPUDevice;
 
-class CPUDevice;
+    using DevicePtr = DeviceBase *;
+    using WorkerPtr = WorkerBase *;
 
-using DevicePtr = DeviceBase *;
-using WorkerPtr = WorkerBase *;
+    class CudaAllocator;
 
-class CudaAllocator;
+    class DevicesGroup;
 
-class DevicesGroup;
-
+}
 #endif //XUANWU_DEFS_H

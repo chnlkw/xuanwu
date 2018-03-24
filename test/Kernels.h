@@ -9,6 +9,6 @@
 
 #include <xuanwu.cuh>
 
-TaskPtr create_taskadd(const Data<int> &a, const Data<int> &b, Data<int> &c);
+Xuanwu::TaskPtr create_taskadd(const Xuanwu::Data<int> &a, const Xuanwu::Data<int> &b, Xuanwu::Data<int> &c);
 
 #endif //DMR_KERNELS_H
