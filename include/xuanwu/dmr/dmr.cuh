@@ -41,7 +41,7 @@ namespace Xuanwu {
                 })));
         task->AddInputs({src, idx});
         task->AddOutput(dst);
-        Xuanwu::AddTask(task);
+        AddTask(task);
     }
 
 }

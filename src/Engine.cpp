@@ -11,7 +11,7 @@
 #define LG(x) CLOG(x, "Engine")
 namespace Xuanwu {
     void TaskBase::WaitFinish() {
-        while (!IsFinished() && Xuanwu::Tick());
+        while (!IsFinished() && Tick());
         if (!IsFinished())
             throw std::runtime_error("Task unfinished, while engine ends");
     }
@@ -26,10 +26,9 @@ namespace Xuanwu {
         tasks_scheduled_.clear();
     }
 
-    Engine::Engine(std::shared_ptr<CPUDevice> cpu_device, std::unique_ptr<MyDeviceGroup> g) :
-            cpu_device_(std::move(cpu_device)),
+    Engine::Engine(std::unique_ptr<MyDeviceGroup> g) :
             devices_(std::make_move_iterator(g->begin()), std::make_move_iterator(g->end())) {
-        LG(INFO) << "engine created with cpu_device=" << cpu_device_.get() << " and devices.size() = "
+        LG(INFO) << "engine created with and devices.size() = "
                  << devices_.size();
         for (auto &d : devices_)
             device_entries_.insert(d.get());
@@ -79,15 +78,16 @@ namespace Xuanwu {
 
     DevicePtr Engine::ChooseDevice(TaskPtr t) {
         std::map<DevicePtr, float> data_score;
-        for (auto &m : t->GetMetas()) {
-            LG(DEBUG) << m << " replica count = " << m.data->last_state_.replicas.size();
-            for (DevicePtr dev : m.data->DevicesPrefered()) {
-                data_score[dev] += m.priority;
-            }
-        }
+
         std::map<DevicePtr, float> dev_score;
         for (auto &dev : devices_) {
-            dev_score[dev.get()] = data_score[dev.get()] + 1.0f / (1 + dev->NumRunningTasks());
+            for (auto &m : t->GetMetas()) {
+                if (m.is_read_only)
+                    dev_score[dev.get()] += 1.0 / (1 + m.data->ReadOverhead(dev.get()));
+                else
+                    dev_score[dev.get()] += 1.0 / (1 + m.data->WriteOverhead(dev.get()));
+            }
+            dev_score[dev.get()] = 1.0f / (1 + dev->NumRunningTasks());
             dev_score[dev.get()] += 1000 * dev->ScoreRunTask(t);
             LG(DEBUG) << *dev << " has score " << dev_score[dev.get()];
 //            LG(DEBUG) << *t << "is runnable on " << *dev;
@@ -126,8 +126,6 @@ namespace Xuanwu {
     const std::vector<std::shared_ptr<DeviceBase>> &Engine::GetDevices() const {
         return devices_;
     }
-
-    const DevicePtr Engine::CpuDevice() const { return cpu_device_.get(); }
 
     std::vector<TaskPtr> Engine::GetCompleteTasks() {
         std::vector<TaskPtr> complete_tasks;

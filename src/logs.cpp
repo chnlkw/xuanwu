@@ -15,8 +15,12 @@ namespace Xuanwu {
         os << "Worker[" << id_ << ", " << *device_ << "]";
     }
 
-    void DeviceBase::log(el::base::type::ostream_t &os) const {
-        os << "Device[" << Id() << "]";
+    void CPUDevice::log(el::base::type::ostream_t &os) const {
+        os << "CPUDevice[]";
+    }
+
+    void GPUDevice::log(el::base::type::ostream_t &os) const {
+        os << "GPUDevice[" << GPUID() << "]";
     }
 
     void TaskBase::Meta::log(el::base::type::ostream_t &os) const {

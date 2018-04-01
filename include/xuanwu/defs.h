@@ -7,6 +7,7 @@
 
 #include <memory>
 #include "easylogging++.h"
+
 namespace Xuanwu {
     class ArrayBase;
 
@@ -38,14 +39,6 @@ namespace Xuanwu {
 
     class Engine;
 
-    using ArrayBasePtr = std::shared_ptr<ArrayBase>;
-    template<class T>
-    using ArrayPtr = std::shared_ptr<Array<T>>;
-    using AllocatorPtr = AllocatorBase *;
-    using NodePtr = std::shared_ptr<Node>;
-    using DataBasePtr = std::shared_ptr<DataBase>;
-    using TaskPtr = std::shared_ptr<TaskBase>;
-
     class GPUDevice;
 
     class CPUDevice;
@@ -55,7 +48,33 @@ namespace Xuanwu {
 
     class CudaAllocator;
 
-    class DevicesGroup;
+    class AllocatorFactoryBase;
 
+    class PtrBase;
+
+    class MMBase;
+
+    using AllocatorFactoryPtr = std::shared_ptr<AllocatorFactoryBase>;
+    using ArrayBasePtr = std::shared_ptr<ArrayBase>;
+    template<class T>
+    using ArrayPtr = std::shared_ptr<Array<T>>;
+    using AllocatorPtr = AllocatorBase *;
+    using NodePtr = std::shared_ptr<Node>;
+    using DataBasePtr = std::shared_ptr<DataBase>;
+    using TaskPtr = std::shared_ptr<TaskBase>;
+
+    namespace detail {
+        template<class U, class V>
+        struct As {
+            using type = V;
+        };
+    }
+    template<class Device>
+    class Allocator;
+
+    template<class Device>
+    class AllocatorFactory;
+
+    class Devices; // bind to tuple of Devices
 }
 #endif //XUANWU_DEFS_H

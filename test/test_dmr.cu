@@ -92,6 +92,7 @@ void test_dmr(size_t npar, size_t num_element, int repeat) {
             d.Write();
         }
         auto r = dmr2.ShuffleValues<uint32_t>(d_values);
+//        while (Xuanwu::Tick());
         size_t sum = 0;
         for (auto &x : r) {
             x.Read();

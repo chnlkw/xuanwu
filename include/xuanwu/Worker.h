@@ -8,6 +8,7 @@
 #include "defs.h"
 #include "cuda_utils.h"
 #include "Runnable.h"
+#include "Ptr.h"
 #include <deque>
 
 namespace Xuanwu {
@@ -24,6 +25,8 @@ namespace Xuanwu {
         DevicePtr Device() const {
             return device_;
         }
+
+        virtual void Copy(Ptr dst, Ptr src, size_t bytes) = 0;
 
         virtual void log(el::base::type::ostream_t &os) const;
     };
@@ -43,6 +46,8 @@ namespace Xuanwu {
         std::vector<TaskPtr> GetCompleteTasks() override;
 
         size_t NumRunningTasks() const override { return tasks_.size(); }
+
+        void Copy(Ptr dst, Ptr src, size_t bytes) override;
     };
 
     class GPUWorker : public WorkerBase {
@@ -79,6 +84,7 @@ namespace Xuanwu {
 
         std::vector<TaskPtr> GetCompleteTasks() override;
 
+        void Copy(Ptr dst, Ptr src, size_t bytes) override;
     };
 
 }

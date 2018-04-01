@@ -9,6 +9,7 @@
 #include "defs.h"
 #include <xuanwu/Allocator.h>
 #include "Device.h"
+
 namespace Xuanwu {
     template<class T>
     struct Generator {
@@ -26,29 +27,44 @@ namespace Xuanwu {
 
     };
 
-    class DevicesGroup {
-    protected:
-        std::vector<std::unique_ptr<DeviceBase>> devices_;
-    public:
-        auto &&operator()() {
-            return std::move(devices_);
-        }
-
-        auto &&FetchDevices() {
-            return std::move(devices_);
-        }
-
-        virtual ~DevicesGroup() {}
-    };
-
-    auto NumGPUInGroup = [] {};
-
-    class GPUGroup : public DevicesGroup {
-    public:
-        GPUGroup(size_t n, const boost::di::extension::ifactory<DeviceBase> &device_factory);
-    };
-
     struct MyDeviceGroup : std::vector<std::shared_ptr<DeviceBase>> {
+    };
+
+    template<class ...Devices>
+    struct MultipleDevicesGroup;
+
+    template<>
+    struct MultipleDevicesGroup<> {
+
+        template<class TInjector, class TDependency>
+        auto operator()(const TInjector &injector, const TDependency &) const {
+            return std::make_unique<MyDeviceGroup>();
+        }
+    };
+
+    template<class Device, class ...OtherDevices>
+    struct MultipleDevicesGroup<Device, OtherDevices...> : public MultipleDevicesGroup<OtherDevices...> {
+
+        int num_;
+
+        MultipleDevicesGroup(int num, typename detail::As<OtherDevices, int>::type ... other_num)
+                : MultipleDevicesGroup<OtherDevices...>(other_num...),
+                  num_(num) {
+            CLOG(DEBUG, "Device") << "MultipleDeviceGroup create With " << num << " " << typeid(Device).name();
+
+        }
+
+        template<class TInjector, class TDependency>
+        auto operator()(const TInjector &injector, const TDependency &dep) const {
+            CLOG(DEBUG, "Device") << "MultipleDeviceGroup run injector With " << num_ << " " << typeid(Device).name();
+            auto ret = static_cast<const MultipleDevicesGroup<OtherDevices...> *>(this)->operator()(injector, dep);
+            for (size_t i = 0; i < num_; i++) {
+                CLOG(DEBUG, "Device") << "MyDeviceGroup creating CPUDevice " << i;
+                ret->push_back(injector.template create<std::unique_ptr<Device>>());
+                CLOG(DEBUG, "Device") << "MyDeviceGroup creating CPUDevice " << i << " OK";
+            }
+            return std::move(ret);
+        }
     };
 
     struct CPUGroupFactory {

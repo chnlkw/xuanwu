@@ -7,23 +7,16 @@
 
 #include <deque>
 #include "DeviceBase.h"
+#include "Array.h"
 #include "DataCopy.h"
 #include "Xuanwu.h"
+#include "MM.h"
 
 namespace Xuanwu {
     class DataBase {
     protected:
-        struct State {
-            size_t bytes = 0;
-            std::map<DevicePtr, ArrayBasePtr> replicas;
-            std::map<DevicePtr, ArrayBasePtr> invalids;
+        size_t bytes_ = 0;
 
-            ArrayBasePtr ReadAt(const DevicePtr &dev, cudaStream_t stream);
-
-            ArrayBasePtr WriteAt(const DevicePtr &dev, cudaStream_t stream, bool keep_old);
-        };
-
-        mutable State last_state_;
         mutable std::deque<std::weak_ptr<TaskBase>> tasks_scheduled_;
 
         mutable std::vector<std::weak_ptr<TaskBase>> last_reading_, last_writing_;
@@ -36,131 +29,99 @@ namespace Xuanwu {
 
         std::vector<std::weak_ptr<DataBase>> follows_;
 
-        mutable void *data_ = nullptr;
-
     public:
 
         explicit DataBase(size_t bytes = 0) {
-            last_state_.bytes = bytes;
+            bytes_ = bytes;
         }
 
         DataBase(const DataBase &) = delete;
 
         size_t Bytes() const {
-            return last_state_.bytes;
+            return bytes_;
         }
 
         size_t NumTasks() const {
             return tasks_scheduled_.size();
         }
 
-        ArrayBasePtr ReadAsync(TaskPtr task, DevicePtr dev, cudaStream_t stream);
+        virtual Ptr GetPtr() = 0;
 
-        ArrayBasePtr Read(DevicePtr dev) const;
+        virtual ArrayBasePtr ReadAsync(WorkerPtr worker, DevicePtr device) = 0;
 
-//    ArrayBasePtr Write(DevicePtr dev, size_t bytes);
+        ArrayBasePtr ReadAsync(WorkerPtr worker);
 
-        ArrayBasePtr Write(DevicePtr dev, bool keep_old = false);
+        virtual ArrayBasePtr WriteAsync(WorkerPtr worker, DevicePtr dev) = 0;
 
-//    ArrayBasePtr WriteAsync(TaskPtr task, DevicePtr dev, cudaStream_t stream, size_t bytes);
+        ArrayBasePtr WriteAsync(WorkerPtr worker);
 
-        ArrayBasePtr WriteAsync(TaskPtr task, DevicePtr dev, cudaStream_t stream, bool keep_old = false);
+        virtual float ReadOverhead(DevicePtr device) = 0;
 
-//    ArrayBasePtr ReadWriteAsync(TaskPtr task, DevicePtr dev, cudaStream_t stream);
-
-//    ArrayBasePtr ReadWrite(DevicePtr dev);
-
-        std::vector<ArrayBasePtr> GetReplicas() const;
+        virtual float WriteOverhead(DevicePtr device) = 0;
 
         void Wait() const;
 
-        void ResizeBytes(size_t bytes);
+        virtual void ResizeBytes(size_t bytes) = 0;
 
-        void Follow(DataBasePtr that) {
-            follows_.push_back(that);
-        }
+//        void Follow(DataBasePtr that) {
+//            follows_.push_back(that);
+//        }
 
-        void *data() const { return data_; }
+        virtual void *data() const = 0;
 
-        void *data() { return data_; }
+        virtual void *data() = 0;
 
-        std::vector<DevicePtr> DevicesPrefered() const;
     };
 
     template<class T>
     class Data : public std::shared_ptr<DataBase> {
     private:
 
-        //add policy
-
     public:
-        Data() : std::shared_ptr<DataBase>(new DataBase()) {
-        }
+        explicit Data(size_t count = 0, MMBase *mm = GetDefaultMM()) : std::shared_ptr<DataBase>(
+                mm->MakeDataBase(count * sizeof(T))) {}
 
         void swap(Data<T> &that) {
             std::shared_ptr<DataBase>::swap(that);
         }
 
-        explicit Data(size_t count) : std::shared_ptr<DataBase>(new DataBase(count * sizeof(T))) {
-        }
-
-        Data(size_t count, DevicePtr device) : std::shared_ptr<DataBase>(new DataBase(count * sizeof(T))) {
-            Write(device);
-        }
-
-        explicit Data(const std::vector<T> &vec, DevicePtr device = Xuanwu::GetCPUDevice()) :
-                std::shared_ptr<DataBase>(new DataBase(vec.size() * sizeof(T))) {
-            Write(device);
+        explicit Data(const std::vector<T> &vec, MMBase *mm = GetDefaultMM()) :
+                std::shared_ptr<DataBase>(mm->MakeData<T>(vec.size())) {
+            Array<T> &arr = Write();
             size_t bytes = vec.size() * sizeof(T);
-            DataCopy(data(), device->Id(), vec.data(), -1, bytes);
+            ArrayCopyAsyncPtr(GetDefaultWorker(), arr.GetPtr(), Ptr((void *) vec.data()), bytes);
         }
 
         using value_type = T;
 
-        const Array<T> &Read(DevicePtr dev = Xuanwu::GetCPUDevice()) const {
-            const Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->Read(dev));
+        const Array<T> &Read() const {
+            const Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->ReadAsync(GetDefaultWorker()));
             return ret;
         }
 
-        const Array<T> &ReadAsync(TaskPtr task, DevicePtr dev, cudaStream_t stream) const {
-            const Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->ReadAsync(task, dev, stream));
+        Array<T> &Write() {
+            Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->WriteAsync(GetDefaultWorker()));
             return ret;
         }
 
-//    Array<T> &WriteAsync(TaskPtr task, DevicePtr dev, cudaStream_t stream, size_t bytes) {
-//        data_ = nullptr;
-//        return *std::static_pointer_cast<Array<T>>(get()->WriteAsync(task, dev, stream, bytes));
-//    }
-
-        Array<T> &WriteAsync(TaskPtr task, DevicePtr dev, cudaStream_t stream, bool keep_old = false) {
-            Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->WriteAsync(task, dev, stream, keep_old));
+        const Array<T> &ReadAsync(WorkerPtr worker, DevicePtr device) const {
+            const Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->ReadAsync(worker, device));
             return ret;
         }
 
-//    Array<T> &ReadWriteAsync(TaskPtr task, DevicePtr dev, cudaStream_t stream) {
-//        data_ = nullptr;
-//        return *std::static_pointer_cast<Array<T>>(get()->ReadWriteAsync(task, dev, stream));
-//    }
-
-//    Array<T> &Write(DevicePtr dev) {
-//        Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->Write(dev));
-//        data_ = ret.data();
-//        return ret;
-//    }
-
-        Array<T> &Write(DevicePtr dev = Xuanwu::GetCPUDevice(), bool keep_old = true) {
-            Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->Write(dev, keep_old));
+        Array<T> &WriteAsync(WorkerPtr worker, DevicePtr device) const {
+            Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->WriteAsync(worker, device));
             return ret;
         }
 
-        std::vector<ArrayPtr<T>> GetReplicas() const {
-            std::vector<ArrayBasePtr> replicas = get()->GetReplicas();
-            std::vector<ArrayPtr<T>> ret;
-            ret.reserve(replicas.size());
-            for (auto &e : replicas)
-                ret.push_back(std::static_pointer_cast<Array<T>>(e));
-            return ret;
-        }
+//        std::vector<ArrayPtr<T>> GetReplicas() const {
+//            std::vector<ArrayBasePtr> replicas = get()->GetReplicas();
+//            std::vector<ArrayPtr<T>> ret;
+//            ret.reserve(replicas.size());
+//            for (auto &e : replicas)
+//                ret.push_back(std::static_pointer_cast<Array<T>>(e));
+//            return ret;
+//        }
 
         size_t size() const {
             return get()->Bytes() / sizeof(T);
@@ -180,7 +141,7 @@ namespace Xuanwu {
 
         std::string ToString() const {
             std::ostringstream os;
-            const T *a = Read(Xuanwu::GetCPUDevice()).data();
+            const T *a = Read(GetDefaultDevice()).data();
             os << "Data(" << "ptr=" << a << " count=" << size() << ": ";
             for (size_t i = 0; i < size(); i++)
                 os << a[i] << ',';
@@ -190,6 +151,36 @@ namespace Xuanwu {
         }
 
     private:
+    };
+
+    class DataImpl : public DataBase {
+        std::map<DevicePtr, ArrayBasePtr> replicas;
+        std::map<DevicePtr, ArrayBasePtr> invalids;
+
+        MMBase *mm_;
+
+        mutable ArrayBasePtr current_array_;
+
+    public:
+        DataImpl(MMBase *mm, size_t size);
+
+        void ResizeBytes(size_t bytes) override;
+
+        ArrayBasePtr ReadAsync(WorkerPtr worker, DevicePtr dev) override;
+
+        ArrayBasePtr WriteAsync(WorkerPtr worker, DevicePtr dev) override;
+
+        void *data() const override;
+
+        void *data() override;
+
+        float ReadOverhead(DevicePtr dev) override;
+
+        float WriteOverhead(DevicePtr dev) override {
+            return 0;
+        }
+
+        Ptr GetPtr() override;
     };
 
     struct data_constructor_t {

@@ -6,7 +6,7 @@ find_package(CUDA)
 
 #enable_language(CUDA)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CUDA_STANDARD 14)
 
 add_subdirectory(easyloggingpp)

@@ -102,16 +102,16 @@ namespace Xuanwu {
         template<class TValue>
         std::vector<Vector<TValue>> ShuffleValues(const std::vector<Vector<TValue>> &value_in) const;
 //    {
-//        assert(value_in.size() == size_);
+//        assert(value_in.size() == pre_alloc_size_);
 //        std::vector<Vector<TValue>> parted_values;
-//        for (size_t i = 0; i < size_; i++) {
+//        for (size_t i = 0; i < pre_alloc_size_; i++) {
 //            parted_values.push_back(dmr1_[i].template ShuffleValues<TValue>(value_in[i]));
 //        }
 //
 //        auto shufed = alltoall_.ShuffleValues(parted_values);
 //
 //        std::vector<Vector<TValue>> ret;
-//        for (size_t i = 0; i < size_; i++) {
+//        for (size_t i = 0; i < pre_alloc_size_; i++) {
 //            ret.push_back(dmr3_[i].template ShuffleValues<TValue>(shufed[i]));
 //        }
 //

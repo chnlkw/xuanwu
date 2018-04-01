@@ -9,20 +9,16 @@
 #include "defs.h"
 #include "cuda_utils.h"
 #include "Runnable.h"
+
 namespace Xuanwu {
     class DeviceBase : public el::Loggable, public std::enable_shared_from_this<DeviceBase>, public Runnable {
-        std::unique_ptr<AllocatorBase> allocator_;
     protected:
         std::vector<std::unique_ptr<WorkerBase>> workers_;
 
     public:
-        explicit DeviceBase(std::unique_ptr<AllocatorBase> allocator);
+        explicit DeviceBase();
 
         virtual ~DeviceBase();
-
-        AllocatorPtr GetAllocator() {
-            return allocator_.get();
-        }
 
         virtual int ScoreRunTask(TaskPtr t);
 
@@ -32,9 +28,6 @@ namespace Xuanwu {
             return workers_;
         }
 
-        int Id() const;
-
-        void log(el::base::type::ostream_t &os) const override;
     };
 
 }

@@ -56,7 +56,7 @@ TEST(Xuanwu, AddTask) {
     d2.Read();
     d3.Read();
     d4.Read();
-    d1.resize(2);
+//    d1.resize(2);
     print(d1);
     print(d2);
     d3.Read();
@@ -69,27 +69,27 @@ TEST(Xuanwu, AddTask) {
 
 INITIALIZE_EASYLOGGINGPP
 
-
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
     el::Loggers::configureFromGlobal("logging.conf");
 
-//    LOG(INFO) << "start";
-
     int num_gpu = DataCopyInitP2P();
+
     auto injector = di::make_injector(
-            di::bind<CudaAllocator>().to<CudaPreAllocator>(),
-            di::bind<MyDeviceGroup>().to(CPUGPUGroupFactory(1, num_gpu)),
-//            di::bind<MyDeviceGroup>().to(CPUGroupFactory(2)),
-            di::bind<>.to(Config{}),
-            di::bind<size_t>().named(PreAllocBytes).to(2LU << 30)
+            di::bind<>.to(GPUDevice::NumWorkers{1}),
+            di::bind<AllocatorFactory<CPUDevice>>().to<CPUAllocatorFactory>(),
+//            di::bind<AllocatorFactory<GPUDevice>>().to<CudaAllocatorFactory>(),
+            di::bind<AllocatorFactory<GPUDevice>>().to<PreAllocatorFactory<CudaAllocatorFactory>>(),
+            di::bind<>.to(PreAllocatorFactory<CudaAllocatorFactory>::Space{1<<30}),
+            di::bind<MMBase>().to<MMMultiDevice<CPUDevice, GPUDevice>>(),
+            di::bind<MyDeviceGroup>().to(MultipleDevicesGroup<CPUDevice, GPUDevice>(1, num_gpu))
     );
-    Xuanwu::Set(injector.create<std::shared_ptr<Engine>>());
+//    auto m = injector.create<std::unique_ptr<MMBase>>();
+//    auto e = injector.create<std::unique_ptr<Engine>>();
+    auto xw = injector.create<std::shared_ptr<Xuanwu::Xuanwu>>();
 
     int ret = RUN_ALL_TESTS();
 
-    Xuanwu::Finish();
-
-    return ret;
+    return 0;
 }

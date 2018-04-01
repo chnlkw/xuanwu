@@ -9,13 +9,15 @@
 
 namespace Xuanwu {
 
-    extern std::shared_ptr<Engine> engine;
-
-    void Set(std::shared_ptr<Engine> e);
-
     bool Tick();
 
-    DevicePtr GetCPUDevice();
+    DevicePtr GetDefaultDevice();
+
+    WorkerPtr GetDefaultWorker();
+
+    AllocatorPtr GetDefaultAllocator();
+
+    MMBase *GetDefaultMM();
 
     void Finish();
 
@@ -26,6 +28,30 @@ namespace Xuanwu {
     }
 
     TaskBase &AddTask(TaskPtr task);
+
+    class Xuanwu {
+        std::unique_ptr<DeviceBase> device;
+        std::unique_ptr<WorkerBase> worker;
+        std::shared_ptr<AllocatorBase> allocator;
+        std::shared_ptr<MMBase> mm;
+        std::unique_ptr<Engine> e;
+        static Xuanwu *xw;
+    public:
+        Xuanwu(std::shared_ptr<MMBase> mm, std::unique_ptr<Engine> e);
+
+        Engine *GetEngine();
+
+        DevicePtr GetDevice();
+
+        WorkerPtr GetWorker();
+
+        AllocatorPtr GetAllocator();
+
+        MMBase *GetMM();
+
+        static Xuanwu* GetXuanwu();
+
+    };
 
 }
 

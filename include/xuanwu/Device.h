@@ -7,6 +7,7 @@
 
 #include "DeviceBase.h"
 #include "Config.h"
+
 namespace Xuanwu {
     class CPUDevice : public DeviceBase {
     public:
@@ -18,18 +19,35 @@ namespace Xuanwu {
         size_t NumRunningTasks() const override { return 0; }
 
         int ScoreRunTask(TaskPtr t) override;
+
+        void log(el::base::type::ostream_t &os) const override;
     };
 
     class GPUDevice : public DeviceBase {
         size_t running_tasks_ = 0;
+        int gpu_id_;
+
+        static int GetGPUId() {
+            static int id = 0;
+            return id++;
+        }
+
     public:
-        GPUDevice(std::unique_ptr<CudaAllocator> allocator, const Config &cfg);
+        using NumWorkers = Strong<unsigned, 2>;
+        GPUDevice(NumWorkers);
 
         void RunTask(TaskPtr t) override;
 
         size_t NumRunningTasks() const override { return running_tasks_; }
 
         int ScoreRunTask(TaskPtr t) override;
+
+        int GPUID() const {
+            return gpu_id_;
+        }
+
+        void log(el::base::type::ostream_t &os) const override;
+
     };
 
 }

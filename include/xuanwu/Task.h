@@ -79,8 +79,6 @@ namespace Xuanwu {
 //        RunWorker(t);
 //    }
 
-        void PrepareData(DevicePtr dev, cudaStream_t stream);
-
         const auto &GetMetas() {
             std::sort(metas_.begin(), metas_.end());
             return metas_;

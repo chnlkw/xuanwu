@@ -5,20 +5,18 @@
 #ifndef LDA_ARRAY_H_H
 #define LDA_ARRAY_H_H
 
-#include "cuda_utils.h"
 #include "defs.h"
-//#include <xuanwu/Allocator.h>
-//#include "Device.h"
-//#include "DataCopy.h"
+#include "cuda_utils.h"
+#include "Xuanwu.h"
+#include "Ptr.h"
+
 namespace Xuanwu {
     class ArrayBase {
     protected:
         AllocatorPtr allocator_;
-        DevicePtr device_;
-//    int device_;
+//    int gpu_id;
         size_t bytes_;
         void *ptr_;
-        bool owned_;
 
         void Allocate(size_t bytes);
 
@@ -26,13 +24,11 @@ namespace Xuanwu {
 
     public:
 
-        explicit ArrayBase(size_t bytes);
+        ArrayBase(size_t bytes, AllocatorPtr allocator);
 
-        ArrayBase(AllocatorPtr allocator, DevicePtr device, size_t bytes);
+//        ArrayBase(const ArrayBase &that);
 
-        ArrayBase(const ArrayBase &that);
-
-        ArrayBase(void *ptr, size_t bytes);
+//        ArrayBase(void *ptr, size_t bytes);
 
         ArrayBase(ArrayBase &&that);
 
@@ -41,16 +37,18 @@ namespace Xuanwu {
         ~ArrayBase();
 
 //    ArrayBase Renew(size_t bytes) const {
-//        return {allocator_, device_, bytes};
+//        return {allocator_, gpu_id, bytes};
 //    }
 
-        void CopyFrom(const ArrayBase &that, bool check_size_equal = true);
+        void CopyFrom(const ArrayBase &that);
 
-        void CopyFromAsync(const ArrayBase &that, cudaStream_t stream, bool check_size_equal = true);
-
-        DevicePtr Device() const { return device_; }
+        void CopyFromAsync(const ArrayBase &that, WorkerPtr worker);
 
         size_t GetBytes() const { return bytes_; }
+
+        AllocatorPtr GetAllocator() const;
+
+        DevicePtr GetDevice() const;
 
         void ResizeBytes(size_t bytes) {
             if (bytes > bytes_)
@@ -59,6 +57,8 @@ namespace Xuanwu {
         }
 
         void *data() const { return ptr_; }
+
+        Ptr GetPtr() const;
     };
 
     template<class T>
@@ -68,12 +68,10 @@ namespace Xuanwu {
 
         using value_type = T;
 
-        explicit Array(size_t count = 0) :
-                ArrayBase(count * sizeof(T)) {
-        }
+        explicit Array(size_t count = 0);
 
-        Array(AllocatorPtr allocator, DevicePtr device, size_t count = 0)
-                : ArrayBase(allocator, device, count * sizeof(T)) {
+        Array(AllocatorPtr allocator,  size_t count = 0)
+                : ArrayBase(count * sizeof(T), allocator) {
         }
 
 //    Array(AllocatorBase *allocator, size_t count) : // need allocated
@@ -97,9 +95,9 @@ namespace Xuanwu {
 //        return *this;
 //    }
 
-        Array(const std::vector<T> &that) :
-                ArrayBase((void *) that.data(), that.size() * sizeof(T)) {
-        }
+//        Array(const std::vector<T> &that) :
+//                ArrayBase((void *) that.data(), that.size() * sizeof(T)) {
+//        }
 
         Array(const Array<T> &that) :
                 ArrayBase(that) {
@@ -148,14 +146,14 @@ namespace Xuanwu {
         }
 
         Array<T> Renew(size_t count) const {
-            return {allocator_, device_, count};
+            return {allocator_, count};
         }
 
         Array<T> Slice(size_t beg, size_t end) {
             assert(beg < end && end <= Count());
             T *ptr = this->data() + beg;
             size_t count = end - beg;
-            return Array<T>(allocator_, ptr, count, device_);
+            return Array<T>(allocator_, ptr, count);
         }
 
 //    Array<T> &operator=(const Array<T> &that) {
@@ -174,6 +172,11 @@ namespace Xuanwu {
             return Slice(range.first, range.second);
         }
     };
+
+    template<class T>
+    Array<T>::Array(size_t count) :
+            ArrayBase(count * sizeof(T), GetDefaultAllocator()) {
+    }
 
     struct array_constructor_t {
         template<class T, class ...Args>
