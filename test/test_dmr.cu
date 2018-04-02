@@ -81,7 +81,7 @@ void test_dmr(size_t npar, size_t num_element, int repeat) {
         }
     }
     if (sum_keys != sum_keys_2 || sum_values != sum_values_2) {
-        LOG(FATAL) << "sum not match" << sum_keys << ' ' << sum_keys_2 << ' ' << sum_values << ' ' << sum_keys_2;
+        LOG(FATAL) << "sum not match " << sum_keys << "!=" << sum_keys_2 << " || " << sum_values << "!=" << sum_values_2;
     }
     LOG(INFO) << "Result OK";
 

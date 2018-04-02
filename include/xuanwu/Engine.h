@@ -31,6 +31,33 @@ namespace Xuanwu {
 
         size_t num_running_tasks_ = 0;
 
+        class DataStep {
+            struct Step {
+                bool is_write = false;
+                std::set<TaskPtr> tasks;
+
+                DevicePtr device_chosen_ = nullptr;
+
+                Step(bool writable) : is_write(writable) {}
+            };
+
+            std::deque<Step> steps_;
+        public:
+
+            DataStep() = default;
+
+            std::vector<TaskPtr> RegisterTask(TaskPtr task, bool writable);
+
+            void UnregisterTask(TaskPtr task);
+
+            DevicePtr ChooseDevice(DevicePtr device);
+
+            DevicePtr DeviceChosen() const;
+
+        };
+
+        std::map<DataBasePtr, DataStep> data_steps_;
+
     private:
 
 //    static std::shared_ptr<Engine> engine;

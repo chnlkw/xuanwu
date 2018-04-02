@@ -19,15 +19,9 @@ namespace Xuanwu {
 
         mutable std::deque<std::weak_ptr<TaskBase>> tasks_scheduled_;
 
-        mutable std::vector<std::weak_ptr<TaskBase>> last_reading_, last_writing_;
+        const std::vector<std::weak_ptr<TaskBase>> &RegisterTask(const TaskPtr &t);
 
         friend class Engine;
-
-        bool writing = false;
-
-        const std::vector<std::weak_ptr<TaskBase>> &RegisterTask(const TaskPtr &t, bool read_only);
-
-        std::vector<std::weak_ptr<DataBase>> follows_;
 
     public:
 
@@ -95,11 +89,13 @@ namespace Xuanwu {
         using value_type = T;
 
         const Array<T> &Read() const {
+            get()->Wait();
             const Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->ReadAsync(GetDefaultWorker()));
             return ret;
         }
 
         Array<T> &Write() {
+            get()->Wait();
             Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->WriteAsync(GetDefaultWorker()));
             return ret;
         }

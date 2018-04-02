@@ -62,23 +62,9 @@ namespace Xuanwu {
 //    return ret;
 //}
 
-    const std::vector<std::weak_ptr<TaskBase>> &DataBase::RegisterTask(const TaskPtr &t, bool read_only) {
+    const std::vector<std::weak_ptr<TaskBase>> &DataBase::RegisterTask(const TaskPtr &t) {
         tasks_scheduled_.push_back(t);
-        if (read_only) {
-            if (writing) {
-                writing = false;
-                last_reading_.clear();
-            }
-            last_reading_.push_back(t);
-            return last_writing_;
-        } else {
-            if (!writing) {
-                writing = true;
-                last_writing_.clear();
-            }
-            last_writing_.push_back(t);
-            return last_reading_;
-        }
+
     }
 
 //    std::vector<ArrayBasePtr> DataBase::GetReplicas() const {

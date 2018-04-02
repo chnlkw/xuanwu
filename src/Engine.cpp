@@ -4,6 +4,7 @@
 
 #include <easylogging++.h>
 #include <atomic>
+#include <utility>
 #include "Engine.h"
 #include "Task.h"
 #include "Data.h"
@@ -59,7 +60,6 @@ namespace Xuanwu {
         ticking = true;
         LG(INFO) << "Tick";
 
-
         GetCompleteTasks();
 
         if (Empty()) {
@@ -77,8 +77,6 @@ namespace Xuanwu {
     }
 
     DevicePtr Engine::ChooseDevice(TaskPtr t) {
-        std::map<DevicePtr, float> data_score;
-
         std::map<DevicePtr, float> dev_score;
         for (auto &dev : devices_) {
             for (auto &m : t->GetMetas()) {
@@ -93,11 +91,31 @@ namespace Xuanwu {
 //            LG(DEBUG) << *t << "is runnable on " << *dev;
         }
         assert(!dev_score.empty());
-        DevicePtr dev_choosed = std::max_element(dev_score.begin(), dev_score.end(),
+        for (auto &m : t->GetMetas()) {
+            if (!m.is_read_only) {
+                if (auto dev = data_steps_[m.data].DeviceChosen()) {
+                    LG(DEBUG) << *dev << " has been chosen by data " << m.data;
+                    for (auto it = dev_score.begin(); it != dev_score.end();) {
+                        if (it->first != dev) {
+                            LG(DEBUG) << *it->first << " has been erased by data " << m.data;
+                            it = dev_score.erase(it);
+                        } else
+                            ++it;
+                    }
+                }
+            }
+        }
+        assert(!dev_score.empty());
+        DevicePtr dev_chosen = std::max_element(dev_score.begin(), dev_score.end(),
                                                  [](auto a, auto b) { return a.second < b.second; })->first;
 //    return ChooseRunnable(devices_.begin(), devices_.end()).get();
-        LG(INFO) << "Choose " << *dev_choosed << " to run " << *t;
-        return dev_choosed;
+        LG(INFO) << "Choose " << *dev_chosen << " to run " << *t;
+        for (auto &m : t->GetMetas()) {
+            if (!m.is_read_only) {
+                data_steps_[m.data].ChooseDevice(dev_chosen);
+            }
+        }
+        return dev_chosen;
     }
 
     void Engine::CheckTaskReady(TaskPtr task) {
@@ -110,6 +128,9 @@ namespace Xuanwu {
         for (auto t : tasks_[task].next_tasks_) {
             --tasks_[t].in_degree;
             CheckTaskReady(t);
+        }
+        for (auto &m : task->GetMetas()) {
+            data_steps_[m.data].UnregisterTask(task);
         }
         task->Finish();
         tasks_.erase(task);
@@ -139,16 +160,48 @@ namespace Xuanwu {
     }
 
     void Engine::RunTask(TaskPtr task) {
+        LG(INFO) << "RunTask " << *task;
         num_running_tasks_++;
         for (auto &m : task->GetMetas()) {
-            const auto &depend_tasks = m.data->RegisterTask(task, m.is_read_only);
+            m.data->RegisterTask(task);
+            const auto &depend_tasks = data_steps_[m.data].RegisterTask(task, !m.is_read_only);
             for (const auto &depend_task : depend_tasks) {
-                if (!depend_task.expired())
-                    AddEdge(depend_task.lock(), task);
+//                if (!depend_task.expired())
+//                    AddEdge(depend_task.lock(), task);
+                AddEdge(depend_task, task);
             }
         }
         CheckTaskReady(task);
     }
 
+    std::vector<TaskPtr> Engine::DataStep::RegisterTask(TaskPtr task, bool writable) {
+        if (steps_.empty() || steps_.back().is_write != writable) {
+            steps_.emplace_back(writable);
+        }
+        steps_.back().tasks.insert(task);
+        if (steps_.size() >= 2) {
+            auto &tasks = steps_[steps_.size() - 2].tasks;
+            return {tasks.begin(), tasks.end()};
+        } else
+            return {};
+    }
 
+    void Engine::DataStep::UnregisterTask(TaskPtr task) {
+        assert(!steps_.empty());
+        assert(steps_[0].tasks.count(task));
+        steps_[0].tasks.erase(task);
+        if (steps_[0].tasks.empty())
+            steps_.pop_front();
+    }
+
+    DevicePtr Engine::DataStep::ChooseDevice(DevicePtr device) {
+        assert(DeviceChosen() == nullptr || DeviceChosen() == device);
+        assert(steps_.at(0).is_write);
+        steps_.at(0).device_chosen_ = device;
+    }
+
+    DevicePtr Engine::DataStep::DeviceChosen() const {
+        assert(steps_.at(0).is_write);
+        return steps_.at(0).device_chosen_;
+    }
 }

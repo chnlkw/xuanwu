@@ -19,6 +19,7 @@ namespace Xuanwu {
 
     TaskBase::TaskBase(std::string name) :
             name_(std::move(name)) {
+        LG(INFO) << "Create " << Name();
     }
 
 }
