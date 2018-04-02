@@ -28,7 +28,6 @@ namespace Xuanwu {
     }
 
     void GPUDevice::RunTask(TaskPtr t) {
-        running_tasks_++;
         ChooseRunnable(workers_.begin(), workers_.end())->RunTask(t);
     }
 
@@ -51,6 +50,13 @@ namespace Xuanwu {
 
     int DeviceBase::ScoreRunTask(TaskPtr t) {
         return 0;
+    }
+
+    size_t DeviceBase::NumRunningTasks() const {
+        size_t ret = 0;
+        for (auto &w : workers_)
+            ret += w->NumRunningTasks();
+        return ret;
     }
 
     int CPUDevice::ScoreRunTask(TaskPtr t) {

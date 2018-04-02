@@ -28,6 +28,8 @@ namespace Xuanwu {
             return workers_;
         }
 
+        size_t NumRunningTasks() const override;
+
     };
 
 }

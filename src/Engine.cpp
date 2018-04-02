@@ -85,7 +85,7 @@ namespace Xuanwu {
                 else
                     dev_score[dev.get()] += 1.0 / (1 + m.data->WriteOverhead(dev.get()));
             }
-            dev_score[dev.get()] = 1.0f / (1 + dev->NumRunningTasks());
+            dev_score[dev.get()] += 10 / (1 + dev->NumRunningTasks());
             dev_score[dev.get()] += 1000 * dev->ScoreRunTask(t);
             LG(DEBUG) << *dev << " has score " << dev_score[dev.get()];
 //            LG(DEBUG) << *t << "is runnable on " << *dev;

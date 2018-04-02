@@ -16,15 +16,12 @@ namespace Xuanwu {
 
         void RunTask(TaskPtr t) override;
 
-        size_t NumRunningTasks() const override { return 0; }
-
         int ScoreRunTask(TaskPtr t) override;
 
         void log(el::base::type::ostream_t &os) const override;
     };
 
     class GPUDevice : public DeviceBase {
-        size_t running_tasks_ = 0;
         int gpu_id_;
 
         static int GetGPUId() {
@@ -37,8 +34,6 @@ namespace Xuanwu {
         GPUDevice(NumWorkers);
 
         void RunTask(TaskPtr t) override;
-
-        size_t NumRunningTasks() const override { return running_tasks_; }
 
         int ScoreRunTask(TaskPtr t) override;
 

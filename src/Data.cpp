@@ -157,11 +157,14 @@ namespace Xuanwu {
     }
 
     float DataImpl::ReadOverhead(DevicePtr dev) {
+        float ret;
         if (replicas.count(dev)) {
-            return 0;
+            ret =  0;
         } else {
-            return 1;
+            ret = 1;
         }
+        LG(INFO)<< "Data " << this << " " << *dev << " Read overhead = " << ret;
+        return ret;
     }
 
     void *DataImpl::data() const { return current_array_->data(); }
