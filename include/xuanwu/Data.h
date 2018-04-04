@@ -13,7 +13,7 @@
 #include "MM.h"
 
 namespace Xuanwu {
-    class DataBase {
+    class DataBase : public el::Loggable {
     protected:
         size_t bytes_ = 0;
 
@@ -23,17 +23,16 @@ namespace Xuanwu {
 
         friend class Engine;
 
+        MMBase *mm_;
+
+        std::string name_ = "Noname";
     public:
 
-        explicit DataBase(size_t bytes = 0) {
-            bytes_ = bytes;
-        }
+        explicit DataBase(MMBase *mm, size_t bytes) : mm_(mm), bytes_(bytes) {}
 
         DataBase(const DataBase &) = delete;
 
-        size_t Bytes() const {
-            return bytes_;
-        }
+        size_t Bytes() const { return bytes_; }
 
         size_t NumTasks() const {
             return tasks_scheduled_.size();
@@ -65,6 +64,13 @@ namespace Xuanwu {
 
         virtual void *data() = 0;
 
+        MMBase *GetMM() const { return mm_; }
+
+        void SetName(std::string name);
+
+        void log(el::base::type::ostream_t &os) const override;
+
+        std::string Name() const { return name_; }
     };
 
     template<class T>
@@ -153,9 +159,7 @@ namespace Xuanwu {
         std::map<DevicePtr, ArrayBasePtr> replicas;
         std::map<DevicePtr, ArrayBasePtr> invalids;
 
-        MMBase *mm_;
-
-        mutable ArrayBasePtr current_array_;
+        mutable ArrayBasePtr current_array_ = nullptr;
 
     public:
         DataImpl(MMBase *mm, size_t size);

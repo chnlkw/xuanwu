@@ -7,6 +7,7 @@
 
 #include <xuanwu/Worker.h>
 #include "Algorithm.h"
+#include <numeric>
 
 namespace Xuanwu {
 

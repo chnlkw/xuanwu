@@ -80,7 +80,7 @@ namespace Xuanwu {
         std::map<DevicePtr, float> dev_score;
         for (auto &dev : devices_) {
             for (auto &m : t->GetMetas()) {
-                if (m.is_read_only)
+                if (m.readable)
                     dev_score[dev.get()] += 1.0 / (1 + m.data->ReadOverhead(dev.get()));
                 else
                     dev_score[dev.get()] += 1.0 / (1 + m.data->WriteOverhead(dev.get()));
@@ -92,7 +92,7 @@ namespace Xuanwu {
         }
         assert(!dev_score.empty());
         for (auto &m : t->GetMetas()) {
-            if (!m.is_read_only) {
+            if (!m.readable) {
                 if (auto dev = data_steps_[m.data].DeviceChosen()) {
                     LG(DEBUG) << *dev << " has been chosen by data " << m.data;
                     for (auto it = dev_score.begin(); it != dev_score.end();) {
@@ -111,7 +111,7 @@ namespace Xuanwu {
 //    return ChooseRunnable(devices_.begin(), devices_.end()).get();
         LG(INFO) << "Choose " << *dev_chosen << " to run " << *t;
         for (auto &m : t->GetMetas()) {
-            if (!m.is_read_only) {
+            if (!m.readable) {
                 data_steps_[m.data].ChooseDevice(dev_chosen);
             }
         }
@@ -164,7 +164,7 @@ namespace Xuanwu {
         num_running_tasks_++;
         for (auto &m : task->GetMetas()) {
             m.data->RegisterTask(task);
-            const auto &depend_tasks = data_steps_[m.data].RegisterTask(task, !m.is_read_only);
+            const auto &depend_tasks = data_steps_[m.data].RegisterTask(task, !m.readable);
             for (const auto &depend_task : depend_tasks) {
 //                if (!depend_task.expired())
 //                    AddEdge(depend_task.lock(), task);

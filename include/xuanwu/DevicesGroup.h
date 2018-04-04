@@ -5,7 +5,6 @@
 #ifndef DMR_DEVICESGROUP_H
 #define DMR_DEVICESGROUP_H
 
-#include <boost/di/extension/injections/factory.hpp>
 #include "defs.h"
 #include <xuanwu/Allocator.h>
 #include "Device.h"
@@ -85,6 +84,7 @@ namespace Xuanwu {
 
     };
 
+#if 0
     struct GPUGroupFactory {
         size_t num_gpus;
 
@@ -141,6 +141,7 @@ namespace Xuanwu {
         }
 
     };
+#endif
 
 }
 #endif //DMR_DEVICESGROUP_H

@@ -6,6 +6,7 @@
 #include "Task.h"
 #include "Worker.h"
 #include "Data.h"
+
 namespace Xuanwu {
 #define LG(x) CLOG(x, "Task")
 
@@ -20,6 +21,45 @@ namespace Xuanwu {
     TaskBase::TaskBase(std::string name) :
             name_(std::move(name)) {
         LG(INFO) << "Create " << Name();
+    }
+
+    void TaskBase::AddInput(DataBasePtr data) {
+        metas_.emplace_back(data, true, false);
+    }
+
+    void TaskBase::AddInputs(std::vector<DataBasePtr> data) {
+        for (auto &d : data)
+            AddInput(d);
+    }
+
+    void TaskBase::AddOutput(DataBasePtr data) {
+        metas_.emplace_back(data, false, true);
+    }
+
+    void TaskBase::AddOutputs(std::vector<DataBasePtr> data) {
+        for (auto &d : data)
+            AddOutput(d);
+    }
+
+    void TaskBase::AddInOutput(DataBasePtr data) {
+        metas_.emplace_back(data, true, true);
+    }
+
+    void TaskBase::AddInOutputs(std::vector<DataBasePtr> data) {
+        for (auto &d : data)
+            AddInOutput(d);
+    }
+
+    void TaskBase::Finish() {
+        finished = true;
+    }
+
+    CPUTask *TaskBase::GetCPUTask() const { return cputask_.get(); }
+
+    GPUTask *TaskBase::GetGPUTask() const { return gputask_.get(); }
+
+    bool TaskBase::IsFinished() const {
+        return finished;
     }
 
 }

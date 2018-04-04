@@ -8,6 +8,7 @@
 #include <xuanwu.hpp>
 #include <gtest/gtest.h>
 #include "Kernels.h"
+#include <boost/di.hpp>
 
 namespace di = boost::di;
 using namespace Xuanwu;

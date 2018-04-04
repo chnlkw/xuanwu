@@ -9,7 +9,6 @@
 #include "cuda_utils.h"
 #include "Config.h"
 #include "Ptr.h"
-#include <boost/di.hpp>
 
 namespace Xuanwu {
 

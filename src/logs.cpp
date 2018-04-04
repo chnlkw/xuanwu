@@ -5,7 +5,13 @@
 #include "Worker.h"
 #include "Device.h"
 #include "Task.h"
+#include "Data.h"
+
 namespace Xuanwu {
+    void DataBase::log(el::base::type::ostream_t &os) const {
+        os << "Data[" << Name() << "]";
+
+    }
     void TaskBase::log(el::base::type::ostream_t &os) const {
         os << "Task[" << Name() << "]";
         if (finished) os << " Finished";
@@ -26,8 +32,7 @@ namespace Xuanwu {
     void TaskBase::Meta::log(el::base::type::ostream_t &os) const {
         os << "[Meta] "
            << data << " "
-           << (is_read_only ? "R " : "W ")
-           << priority << ". ";
+           << (readable ? "R " : "W ");
     }
 
 }

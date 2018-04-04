@@ -19,6 +19,11 @@ namespace Xuanwu {
         Data<T> MakeData(size_t count) {
             return Data<T>(count, this);
         }
+
+        template<class T>
+        Array<T> MakeArray(size_t count, DevicePtr device) {
+            return Array<T>(GetAllocatorByDevice(device), count);
+        }
     };
 
     class MMImpl : public MMBase {

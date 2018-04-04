@@ -23,9 +23,9 @@ namespace Xuanwu {
             Clock clk;
             if (cputask) {
                 for (auto &m : t->GetMetas()) {
-                    if (m.is_read_only) {
+                    if (m.readable) {
                         m.data->ReadAsync(this, device_);
-                    } else {
+                    } else if (m.writable) {
                         m.data->WriteAsync(this, device_);
                     }
                 }
@@ -67,9 +67,9 @@ namespace Xuanwu {
         CLOG(INFO, "Worker") << *this << " Run " << *t;
         if (gputask) {
             for (auto &m : t->GetMetas()) {
-                if (m.is_read_only) {
+                if (m.readable) {
                     m.data->ReadAsync(this, device_);
-                } else {
+                } else if (m.writable) {
                     m.data->WriteAsync(this, device_);
                 }
             }

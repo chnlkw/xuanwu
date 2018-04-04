@@ -9,7 +9,7 @@
 #include <set>
 #include <list>
 #include <queue>
-
+#include <utility>
 #include "defs.h"
 #include "cuda_utils.h"
 #include "Xuanwu.h"
@@ -38,21 +38,19 @@ namespace Xuanwu {
     };
 
     class TaskBase : public std::enable_shared_from_this<TaskBase>, public el::Loggable {
-        TaskBase(const TaskBase &) = delete;
-
         struct Meta : public el::Loggable {
             DataBasePtr data;
-            bool is_read_only = true;
-            int priority = 0;
+            bool readable = false;
+            bool writable = false;
 
-            Meta(DataBasePtr d, bool b, int p) :
-                    data(d),
-                    is_read_only(b),
-                    priority(p) {}
+            Meta(DataBasePtr d, bool readable, bool writable) :
+                    data(std::move(d)),
+                    readable(readable),
+                    writable(writable) {}
 
-            bool operator<(const Meta &that) const {
-                return priority > that.priority;
-            }
+//            bool operator<(const Meta &that) const {
+//                return priority > that.priority;
+//            }
 
             void log(el::base::type::ostream_t &os) const override;
         };
@@ -74,27 +72,12 @@ namespace Xuanwu {
     public:
         ~TaskBase() override;
 
-//    template<class Worker>
-//    void Run(Worker *t) {
-//        RunWorker(t);
-//    }
+        TaskBase(const TaskBase &) = delete;
 
-        const auto &GetMetas() {
-            std::sort(metas_.begin(), metas_.end());
+        const auto &GetMetas() const {
+//            std::sort(metas_.begin(), metas_.end());
             return metas_;
         }
-//    const std::vector<DataBasePtr> &GetInputs() const {
-//        return inputs_;
-//    }
-//
-//    const std::vector<DataBasePtr> &GetOutputs() const {
-//        return outputs_;
-//    }
-
-//    TaskBase &Prefer(WorkerPtr w) {
-//        worker_prefered_.insert(w);
-//        return *this;
-//    }
 
         virtual void Run(CPUWorker *) { LOG(FATAL) << "not implemented in CPUWorker : " << *this; };
 
@@ -106,40 +89,29 @@ namespace Xuanwu {
 
         void log(el::base::type::ostream_t &os) const override;
 
-        bool IsFinished() const {
-            return finished;
-        }
+        bool IsFinished() const;
 
-    public:
         explicit TaskBase(std::string name = "nonamed task");
 
         TaskBase(std::string name, std::unique_ptr<CPUTask> cputask, std::unique_ptr<GPUTask> gputask);
 
-        void AddInput(DataBasePtr data, int priority = 1) {
-            metas_.push_back(Meta{data, true, priority});
-        }
+        void AddInput(DataBasePtr data);
 
-        void AddInputs(std::vector<DataBasePtr> data, int priority = 1) {
-            for (auto &d : data)
-                AddInput(d, priority);
-        }
+        void AddInputs(std::vector<DataBasePtr> data);
 
-        void AddOutput(DataBasePtr data, int priority = 2) {
-            metas_.push_back(Meta{data, false, priority});
-        }
+        void AddOutput(DataBasePtr data);
 
-        void AddOutputs(std::vector<DataBasePtr> data, int priority = 2) {
-            for (auto &d : data)
-                AddOutput(d, priority);
-        }
+        void AddOutputs(std::vector<DataBasePtr> data);
 
-        void Finish() {
-            finished = true;
-        }
+        void AddInOutput(DataBasePtr data);
 
-        CPUTask *GetCPUTask() const { return cputask_.get(); }
+        void AddInOutputs(std::vector<DataBasePtr> data);
 
-        GPUTask *GetGPUTask() const { return gputask_.get(); }
+        void Finish();
+
+        CPUTask *GetCPUTask() const;
+
+        GPUTask *GetGPUTask() const;
     };
 
 }

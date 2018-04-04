@@ -10,6 +10,8 @@
 #include "Worker.h"
 
 #define LG(x) CLOG(x, "Data")
+#define LG_IF(c, x) CLOG_IF(c, x, "Data")
+
 namespace Xuanwu {
 
 //ArrayBasePtr DataBase::ReadWriteAsync(TaskPtr task, DevicePtr dev, cudaStream_t stream) {
@@ -64,9 +66,11 @@ namespace Xuanwu {
 
     const std::vector<std::weak_ptr<TaskBase>> &DataBase::RegisterTask(const TaskPtr &t) {
         tasks_scheduled_.push_back(t);
-
     }
 
+    void DataBase::SetName(std::string name) {
+        name_ = std::move(name);
+    }
 //    std::vector<ArrayBasePtr> DataBase::GetReplicas() const {
 //        std::vector<ArrayBasePtr> ret;
 //        ret.reserve(last_state_.replicas.size());
@@ -97,7 +101,7 @@ namespace Xuanwu {
         return WriteAsync(worker, worker->Device());
     }
 
-    DataImpl::DataImpl(MMBase *mm, size_t size) : DataBase(size), mm_(mm) {}
+    DataImpl::DataImpl(MMBase *mm, size_t size) : DataBase(mm, size) {}
 
     void DataImpl::ResizeBytes(size_t bytes) {
         Wait();
@@ -114,6 +118,7 @@ namespace Xuanwu {
     ArrayBasePtr DataImpl::ReadAsync(WorkerPtr worker, DevicePtr dev) {
         if (replicas.count(dev) == 0) {
             ArrayBasePtr arr;
+            LOG_IF(replicas.empty(), FATAL) << *this << " calls ReadAsync() with no replicas";
             assert(!replicas.empty());
             ArrayBasePtr from = replicas.begin()->second;
             if (invalids.count(dev)) {
@@ -123,7 +128,8 @@ namespace Xuanwu {
                 arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
             }
             assert(from->GetBytes() >= bytes_);
-            arr->CopyFromAsync(*from, worker);
+            ArrayCopyAsyncPtr(worker, arr->GetPtr(), from->GetPtr(), bytes_);
+//            arr->CopyFromAsync(*from, worker);
             replicas[dev] = arr;
         }
         if (replicas[dev]->GetBytes() > bytes_)
@@ -159,19 +165,27 @@ namespace Xuanwu {
     float DataImpl::ReadOverhead(DevicePtr dev) {
         float ret;
         if (replicas.count(dev)) {
-            ret =  0;
+            ret = 0;
         } else {
             ret = 1;
         }
-        LG(INFO)<< "Data " << this << " " << *dev << " Read overhead = " << ret;
+        LG(INFO) << "Data " << this << " " << *dev << " Read overhead = " << ret;
         return ret;
     }
 
-    void *DataImpl::data() const { return current_array_->data(); }
+    void *DataImpl::data() const {
+        assert(current_array_);
+        return current_array_->data();
+    }
 
-    void *DataImpl::data() { return current_array_->data(); }
+    void *DataImpl::data() {
+        assert(current_array_);
+        return current_array_->data();
+    }
 
     Ptr DataImpl::GetPtr() {
+        assert(current_array_);
         return current_array_->GetPtr();
     }
+
 }

@@ -61,7 +61,7 @@ namespace Xuanwu {
                 std::vector<TPar> par_id(keys.size());
                 std::transform(keys.begin(), keys.end(), par_id.begin(), partitioner_);
                 DMR<TPar, TOff> dmr(par_id);
-                auto parted_key = dmr.ShuffleValues<TKey>(keys);
+                auto parted_key = dmr.template ShuffleValues<TKey>(keys);
                 parted_keys.push_back(parted_key);
                 dmr1_[mapper_id] = std::move(dmr);
             }

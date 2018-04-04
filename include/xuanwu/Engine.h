@@ -13,7 +13,6 @@
 #include "Device.h"
 #include "DevicesGroup.h"
 #include "Runnable.h"
-#include <boost/di.hpp>
 
 namespace Xuanwu {
     class Engine : public Runnable {
@@ -86,7 +85,7 @@ namespace Xuanwu {
         TaskBase &AddTask(Args &&... args) {
             auto t = std::make_shared<Task>(std::forward<Args>(args)...);
             return AddTask(t);
-        };
+        }
 
         void RunTask(TaskPtr t) override;
 

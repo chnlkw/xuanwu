@@ -21,7 +21,7 @@ namespace Xuanwu {
     };
 
     template<class T, class TOff>
-    void ShuffleByIdx(Data<T> dst, Data<T> src, Data<TOff> idx) {
+    void ShuffleByIdx(Data <T> dst, Data <T> src, Data <TOff> idx) {
 //    LG(INFO) << dst.size() << " ?= " << src.size() << " ?= " << idx.size();
         assert(dst.size() == src.size());
         assert(dst.size() == idx.size());
