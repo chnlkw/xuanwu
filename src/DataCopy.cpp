@@ -15,6 +15,8 @@
 #include <iostream>
 #include <easylogging++.h>
 
+#define LG(x) CLOG(x, "DataCopy")
+
 namespace Xuanwu {
 
 #if 1
@@ -30,15 +32,16 @@ namespace Xuanwu {
         return true;
     };
 
-    template<class... Impl, class Base, class F>
-    bool MultiCastAndRun(Base *base, F f) {
-        return ( ... || CastAndRun<Impl>(base, f));
-    };
 
-    template<class... Impl, class Base, class F>
-    bool MultiCastAndRun(std::tuple<Impl...> *, Base *base, F f) {
-        return ( ... || CastAndRun<Impl>(base, f));
-    };
+//    template<class... Impl, class Base, class F>
+//    bool MultiCastAndRun(Base *base, F f) {
+//        return ( ... || CastAndRun<Impl>(base, f));
+//    };
+
+//    template<class... Impl, class Base, class F>
+//    bool MultiCastAndRun(std::tuple<Impl...> *, Base *base, F f) {
+//        return ( ... || CastAndRun<Impl>(base, f));
+//    };
 
 
     template<class F>
@@ -210,6 +213,7 @@ namespace Xuanwu {
     }
 
     void ArrayCopyAsyncPtr(WorkerPtr worker, Ptr dst, Ptr src, size_t bytes) {
+        LG(INFO) << "ArrayCopyAsync " << *worker << " " << src << " --> " << dst << " bytes=" << bytes;
         worker->Copy(dst, src, bytes);
     }
 }

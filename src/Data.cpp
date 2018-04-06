@@ -174,16 +174,19 @@ namespace Xuanwu {
     }
 
     void *DataImpl::data() const {
+        LOG_IF(!current_array_, FATAL) << *this << " Data::current_array_ is null";
         assert(current_array_);
         return current_array_->data();
     }
 
     void *DataImpl::data() {
+        LOG_IF(!current_array_, FATAL) << *this << " Data::current_array_ is null";
         assert(current_array_);
         return current_array_->data();
     }
 
     Ptr DataImpl::GetPtr() {
+        LOG_IF(!current_array_, FATAL) << *this << " Data::current_array_ is null";
         assert(current_array_);
         return current_array_->GetPtr();
     }

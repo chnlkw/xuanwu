@@ -181,6 +181,8 @@ namespace Xuanwu {
         }
 
         Ptr GetPtr() override;
+
+        void log(el::base::type::ostream_t &os) const override;
     };
 
     struct data_constructor_t {

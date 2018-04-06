@@ -6,8 +6,9 @@
 #define XUANWU_PTR_H
 
 #include "defs.h"
+#include <easylogging++.h>
 
-class Ptr {
+class Ptr : public el::Loggable {
 public:
     enum Type {
         CPU, GPU
@@ -30,6 +31,7 @@ public:
     bool isCPU() const { return type_ == Type::CPU; }
     bool isGPU() const { return type_ == Type::GPU; }
 
+    virtual void log(el::base::type::ostream_t &os) const;
 
 private:
     void *ptr_;

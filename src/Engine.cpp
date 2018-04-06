@@ -77,6 +77,7 @@ namespace Xuanwu {
     }
 
     DevicePtr Engine::ChooseDevice(TaskPtr t) {
+        LG(DEBUG) << " Choose Device of " << *t;
         std::map<DevicePtr, float> dev_score;
         for (auto &dev : devices_) {
             for (auto &m : t->GetMetas()) {
@@ -164,7 +165,8 @@ namespace Xuanwu {
         num_running_tasks_++;
         for (auto &m : task->GetMetas()) {
             m.data->RegisterTask(task);
-            const auto &depend_tasks = data_steps_[m.data].RegisterTask(task, !m.readable);
+            LG(DEBUG) << "RegisterTask " << *task << " " << *m.data << " writable=" << m.writable;
+            const auto &depend_tasks = data_steps_[m.data].RegisterTask(task, m.writable);
             for (const auto &depend_task : depend_tasks) {
 //                if (!depend_task.expired())
 //                    AddEdge(depend_task.lock(), task);

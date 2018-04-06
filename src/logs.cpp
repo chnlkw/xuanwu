@@ -10,7 +10,11 @@
 namespace Xuanwu {
     void DataBase::log(el::base::type::ostream_t &os) const {
         os << "Data[" << Name() << "]";
-
+    }
+    void DataImpl::log(el::base::type::ostream_t &os) const {
+        os << "Data[" << Name() << "]";
+        os <<"(r:"; for (auto& r : replicas) os <<" " << *r.first; os << ")";
+        os <<"(i:"; for (auto& i : invalids) os <<" " << *i.first; os << ")";
     }
     void TaskBase::log(el::base::type::ostream_t &os) const {
         os << "Task[" << Name() << "]";
@@ -31,8 +35,9 @@ namespace Xuanwu {
 
     void TaskBase::Meta::log(el::base::type::ostream_t &os) const {
         os << "[Meta] "
-           << data << " "
-           << (readable ? "R " : "W ");
+           << *data << " "
+           << (readable ? "R" : "")
+           << (writable ? "W" : "");
     }
 
 }

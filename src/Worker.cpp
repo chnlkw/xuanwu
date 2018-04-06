@@ -25,9 +25,11 @@ namespace Xuanwu {
                 for (auto &m : t->GetMetas()) {
                     if (m.readable) {
                         m.data->ReadAsync(this, device_);
-                    } else if (m.writable) {
+                    }
+                    if (m.writable) {
                         m.data->WriteAsync(this, device_);
                     }
+                    CLOG(DEBUG, "Worker") << m;
                 }
                 (*cputask)(this);
             } else
@@ -69,9 +71,11 @@ namespace Xuanwu {
             for (auto &m : t->GetMetas()) {
                 if (m.readable) {
                     m.data->ReadAsync(this, device_);
-                } else if (m.writable) {
+                }
+                if (m.writable) {
                     m.data->WriteAsync(this, device_);
                 }
+                CLOG(DEBUG, "Worker") << m;
             }
             CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
             (*gputask)(this);
