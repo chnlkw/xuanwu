@@ -47,20 +47,20 @@ namespace Xuanwu {
     }
 
     DevicePtr GetDefaultDevice() {
-        Xuanwu::GetXuanwu()->GetDevice();
+        return Xuanwu::GetXuanwu()->GetDevice();
     }
 
     WorkerPtr GetDefaultWorker() {
-        Xuanwu::GetXuanwu()->GetWorker();
+        return Xuanwu::GetXuanwu()->GetWorker();
 
     }
 
     AllocatorPtr GetDefaultAllocator() {
-        Xuanwu::GetXuanwu()->GetAllocator();
+        return Xuanwu::GetXuanwu()->GetAllocator();
     }
 
     MMBase *GetDefaultMM() {
-        Xuanwu::GetXuanwu()->GetMM();
+        return Xuanwu::GetXuanwu()->GetMM();
     }
 
     TaskBase &AddTask(TaskPtr task) {
