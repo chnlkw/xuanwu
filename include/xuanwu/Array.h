@@ -33,9 +33,9 @@ namespace Xuanwu {
 
         size_t GetBytes() const { return bytes_; }
 
-        AllocatorPtr GetAllocator() const;
+//        AllocatorPtr GetAllocator() const;
 
-        DevicePtr GetDevice() const;
+//        DevicePtr GetDevice() const;
 
         void ResizeBytes(size_t bytes) {
             if (bytes > bytes_)

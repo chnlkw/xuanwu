@@ -14,6 +14,8 @@
 
 namespace Xuanwu {
 
+    size_t DataBase::s_uid = 0;
+
 //ArrayBasePtr DataBase::ReadWriteAsync(TaskPtr task, DevicePtr dev, cudaStream_t stream) {
 //    last_state_.ReadAt(dev, stream);
 //    ArrayBasePtr arr = last_state_.WriteAt(dev, stream, true, last_state_.bytes);

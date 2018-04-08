@@ -11,18 +11,15 @@
 namespace Xuanwu {
 
     class AllocatorBase {
-        DevicePtr device_;
     public:
 
-        AllocatorBase(DevicePtr device = nullptr);
+        AllocatorBase() = default;
 
         virtual ~AllocatorBase() = default;
 
         virtual void *Alloc(size_t size) = 0;
 
         virtual void Free(void *ptr) = 0;
-
-        DevicePtr GetDevice();
 
         virtual Ptr MakePtr(void* ptr) const = 0;
 

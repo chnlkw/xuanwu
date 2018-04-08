@@ -70,9 +70,9 @@ namespace Xuanwu {
 //        worker->Copy(GetPtr(), that.GetPtr(), bytes);
 //    }
 
-    DevicePtr ArrayBase::GetDevice() const { return allocator_->GetDevice(); }
+//    DevicePtr ArrayBase::GetDevice() const { return allocator_->GetDevice(); }
 
-    AllocatorPtr ArrayBase::GetAllocator() const { return allocator_; }
+//    AllocatorPtr ArrayBase::GetAllocator() const { return allocator_; }
 
     Ptr ArrayBase::GetPtr() const {
         return allocator_->MakePtr(ptr_);

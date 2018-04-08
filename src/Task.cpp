@@ -25,6 +25,7 @@ namespace Xuanwu {
     }
 
     void TaskBase::AddInput(DataBasePtr data) {
+        LG(INFO) << "AddInput " << *data;
         metas_.emplace_back(data, true, false);
     }
 
@@ -34,6 +35,7 @@ namespace Xuanwu {
     }
 
     void TaskBase::AddOutput(DataBasePtr data) {
+        LG(INFO) << "AddOutput " << *data;
         metas_.emplace_back(data, false, true);
     }
 
@@ -43,6 +45,7 @@ namespace Xuanwu {
     }
 
     void TaskBase::AddInOutput(DataBasePtr data) {
+        LG(INFO) << "AddInOutput " << *data;
         metas_.emplace_back(data, true, true);
     }
 

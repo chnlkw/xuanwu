@@ -9,9 +9,6 @@
 #define LG(x) CLOG(x, "Allocator")
 
 namespace Xuanwu {
-    AllocatorBase::AllocatorBase(DevicePtr device) : device_(device) {}
-
-    DevicePtr AllocatorBase::GetDevice() { return device_; }
 
     std::string bytes_to_str(size_t bytes) {
         double b = bytes;
@@ -51,7 +48,7 @@ namespace Xuanwu {
             size_(pre_alloc_size),
             allocated_(0),
             align_(4096) {
-        LG(INFO) << "PreAllocator with device = " << *GetDevice() << "  pre_alloc_bytes = "
+        LG(INFO) << "PreAllocator with " << "  pre_alloc_bytes = "
                  << bytes_to_str(size_)
                  << " align = " << align_;
         assert(align_ > 0);
@@ -107,7 +104,7 @@ namespace Xuanwu {
             throw std::runtime_error(os.str().c_str());
         }
         allocated_ -= it->second;
-        LG(INFO) << "CurePreAllocator: " << " Free=" << it->second << " allocated=" << bytes_to_str(allocated_)
+        LG(INFO) << "PreAllocator: " << " Free=" << bytes_to_str(it->second) << " allocated=" << bytes_to_str(allocated_)
                  << " remain=" << bytes_to_str(size_ - allocated_);
         m_.erase(it);
     }

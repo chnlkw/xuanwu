@@ -26,9 +26,18 @@ namespace Xuanwu {
         MMBase *mm_;
 
         std::string name_ = "Noname";
+
+        static size_t s_uid;
+
+        size_t uid;
+
     public:
 
-        explicit DataBase(MMBase *mm, size_t bytes) : mm_(mm), bytes_(bytes) {}
+        virtual ~DataBase() {
+
+        }
+
+        explicit DataBase(MMBase *mm, size_t bytes) : mm_(mm), bytes_(bytes), uid(s_uid++) {}
 
         DataBase(const DataBase &) = delete;
 
@@ -68,6 +77,8 @@ namespace Xuanwu {
 
         MMBase *GetMM() const { return mm_; }
 
+        size_t GetUID() const { return uid; }
+
         void SetName(std::string name);
 
         void log(el::base::type::ostream_t &os) const override;
@@ -82,6 +93,12 @@ namespace Xuanwu {
     public:
         explicit Data(size_t count = 0, MMBase *mm = GetDefaultMM()) : std::shared_ptr<DataBase>(
                 mm->MakeDataBase(count * sizeof(T))) {}
+
+        Data(const Data &that) : std::shared_ptr<DataBase>(that) {
+            if (get()->Name().find("cdk_keys_") != std::string::npos) {
+                CLOG(INFO, "Data") << "copy data<T> for " << *get();
+            }
+        }
 
         void swap(Data<T> &that) {
             std::shared_ptr<DataBase>::swap(that);

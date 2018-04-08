@@ -94,7 +94,7 @@ namespace Xuanwu {
         assert(!dev_score.empty());
         for (auto &m : t->GetMetas()) {
             if (!m.readable) {
-                if (auto dev = data_steps_[m.data].DeviceChosen()) {
+                if (auto dev = data_steps_[m.data->GetUID()].DeviceChosen()) {
                     LG(DEBUG) << *dev << " has been chosen by data " << m.data;
                     for (auto it = dev_score.begin(); it != dev_score.end();) {
                         if (it->first != dev) {
@@ -113,7 +113,7 @@ namespace Xuanwu {
         LG(INFO) << "Choose " << *dev_chosen << " to run " << *t;
         for (auto &m : t->GetMetas()) {
             if (!m.readable) {
-                data_steps_[m.data].ChooseDevice(dev_chosen);
+                data_steps_[m.data->GetUID()].ChooseDevice(dev_chosen);
             }
         }
         return dev_chosen;
@@ -131,7 +131,7 @@ namespace Xuanwu {
             CheckTaskReady(t);
         }
         for (auto &m : task->GetMetas()) {
-            data_steps_[m.data].UnregisterTask(task);
+            data_steps_[m.data->GetUID()].UnregisterTask(task);
         }
         task->Finish();
         tasks_.erase(task);
@@ -166,7 +166,7 @@ namespace Xuanwu {
         for (auto &m : task->GetMetas()) {
             m.data->RegisterTask(task);
             LG(DEBUG) << "RegisterTask " << *task << " " << *m.data << " writable=" << m.writable;
-            const auto &depend_tasks = data_steps_[m.data].RegisterTask(task, m.writable);
+            const auto &depend_tasks = data_steps_[m.data->GetUID()].RegisterTask(task, m.writable);
             for (const auto &depend_task : depend_tasks) {
 //                if (!depend_task.expired())
 //                    AddEdge(depend_task.lock(), task);

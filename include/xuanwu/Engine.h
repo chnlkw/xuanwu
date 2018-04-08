@@ -7,8 +7,7 @@
 
 #include "cuda_utils.h"
 #include <deque>
-#include <map>
-#include <set>
+#include <unordered_map>
 #include "defs.h"
 #include "Device.h"
 #include "DevicesGroup.h"
@@ -55,7 +54,7 @@ namespace Xuanwu {
 
         };
 
-        std::map<DataBasePtr, DataStep> data_steps_;
+        std::unordered_map<size_t, DataStep> data_steps_;
 
     private:
 
