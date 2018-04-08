@@ -13,6 +13,9 @@
 #include "defs.h"
 #include "cuda_utils.h"
 #include "Xuanwu.h"
+#include "MM.h"
+#include "Array.h"
+#include "Device.h"
 
 //enum Flag {
 //    Default = 0,
@@ -21,20 +24,55 @@
 //};
 
 namespace Xuanwu {
-    struct GPUTask : public std::function<void(GPUWorker *)> {
+    struct Context {
+        virtual void Copy(Ptr dst, Ptr src, size_t bytes) = 0;
+    };
+
+    struct CPUContext : Context {
+        void Copy(Ptr dst, Ptr src, size_t bytes) override {
+            CPUCopy(dst, src, bytes);
+        }
+    };
+
+    struct GPUContext : Context {
+        cudaStream_t stream;
+        MMBase *mm;
+        GPUDevice *dev;
+        TaskPtr task;
+
+        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, TaskPtr task) :
+                mm(mm),
+                dev(dev),
+                stream(stream),
+                task(task) {
+        }
+
+        ArrayBasePtr MakeArrayBase(size_t bytes);
+
+        template<class T>
+        T* Alloc(size_t count) {
+            return std::static_pointer_cast<Array<T>>(MakeArrayBase(count*sizeof(T)))->data();
+        }
+
+        void Copy(Ptr dst, Ptr src, size_t bytes) override {
+            GPUCopy(dst, src, bytes, dev->GPUID(), stream);
+        }
+    };
+
+    struct GPUTask : public std::function<void(GPUContext)> {
         int score;
 
-        explicit GPUTask(std::function<void(GPUWorker *)> f, int score = 2) :
-                std::function<void(GPUWorker *)>(f),
+        explicit GPUTask(std::function<void(GPUContext)> f, int score = 2) :
+                std::function<void(GPUContext)>(f),
                 score(score) {
         }
     };
 
-    struct CPUTask : public std::function<void(CPUWorker *)> {
+    struct CPUTask : public std::function<void(CPUContext)> {
         int score;
 
-        explicit CPUTask(std::function<void(CPUWorker *)> f, int score = 1) :
-                std::function<void(CPUWorker *)>(f), score(score) {}
+        explicit CPUTask(std::function<void(CPUContext)> f, int score = 1) :
+                std::function<void(CPUContext)>(f), score(score) {}
     };
 
     class TaskBase : public std::enable_shared_from_this<TaskBase>, public el::Loggable {
@@ -56,13 +94,10 @@ namespace Xuanwu {
         };
 
         std::vector<Meta> metas_;
+        std::vector<ArrayBasePtr> tmp_arrays_;
         bool finished = false;
 
         friend class Engine;
-
-        friend class WithOutputs;
-
-        friend class WithInputs;
 
         std::string name_;
 
@@ -106,6 +141,8 @@ namespace Xuanwu {
         void AddInOutput(DataBasePtr data);
 
         void AddInOutputs(std::vector<DataBasePtr> data);
+
+        void AddTempArray(ArrayBasePtr arr);
 
         void Finish();
 

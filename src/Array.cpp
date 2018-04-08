@@ -60,15 +60,15 @@ namespace Xuanwu {
 //    printf("reallocate ptr %p bytes = %lu\n", ptr_, bytes);
     }
 
-    void ArrayBase::CopyFrom(const ArrayBase &that) {
-        CopyFromAsync(that, GetDefaultWorker());
-    }
-
-    void ArrayBase::CopyFromAsync(const ArrayBase &that, WorkerPtr worker) {
-        size_t bytes = std::min(this->bytes_, that.bytes_);
-        assert(this->bytes_ == that.bytes_);
-        ArrayCopyAsyncPtr(worker, GetPtr(), that.GetPtr(), bytes);
-    }
+//    void ArrayBase::CopyFrom(const ArrayBase &that) {
+//        CopyFromAsync(that, GetDefaultWorker());
+//    }
+//
+//    void ArrayBase::CopyFromAsync(const ArrayBase &that, WorkerPtr worker) {
+//        size_t bytes = std::min(this->bytes_, that.bytes_);
+//        assert(this->bytes_ == that.bytes_);
+//        worker->Copy(GetPtr(), that.GetPtr(), bytes);
+//    }
 
     DevicePtr ArrayBase::GetDevice() const { return allocator_->GetDevice(); }
 

@@ -14,7 +14,6 @@ namespace Xuanwu {
     class ArrayBase {
     protected:
         AllocatorPtr allocator_;
-//    int gpu_id;
         size_t bytes_;
         void *ptr_;
 
@@ -26,23 +25,11 @@ namespace Xuanwu {
 
         ArrayBase(size_t bytes, AllocatorPtr allocator);
 
-//        ArrayBase(const ArrayBase &that);
-
-//        ArrayBase(void *ptr, size_t bytes);
-
         ArrayBase(ArrayBase &&that);
 
         ArrayBase(const ArrayBase &that, size_t off, size_t bytes);
 
         ~ArrayBase();
-
-//    ArrayBase Renew(size_t bytes) const {
-//        return {allocator_, gpu_id, bytes};
-//    }
-
-        void CopyFrom(const ArrayBase &that);
-
-        void CopyFromAsync(const ArrayBase &that, WorkerPtr worker);
 
         size_t GetBytes() const { return bytes_; }
 
@@ -70,38 +57,15 @@ namespace Xuanwu {
 
         explicit Array(size_t count = 0);
 
-        Array(AllocatorPtr allocator,  size_t count = 0)
+        Array(AllocatorPtr allocator, size_t count = 0)
                 : ArrayBase(count * sizeof(T), allocator) {
         }
-
-//    Array(AllocatorBase *allocator, size_t count) : // need allocated
-//            ArrayBase(allocator, count * sizeof(T)),
-//            count_(count) {
-//    }
-
-//    Array(MultiDeviceAllocator &allocator, T *ptr, size_t count, int device) : // not allocated
-//            ArrayBase(allocator, ptr, count * sizeof(T), device),
-//            count_(count) {
-//    }
 
         Array(Array<T> &&that) :
                 ArrayBase(std::move(that)) {
         }
 
-//    Array &operator=(Array<T> &&that) {
-//        count_ = that.count_;
-//        that.count_ = 0;
-//        ArrayBase::operator=(std::move(that));
-//        return *this;
-//    }
-
-//        Array(const std::vector<T> &that) :
-//                ArrayBase((void *) that.data(), that.size() * sizeof(T)) {
-//        }
-
-        Array(const Array<T> &that) :
-                ArrayBase(that) {
-        }
+        Array(const Array<T> &that)  = delete;
 
         T *data() {
             return reinterpret_cast<T *>(ptr_);
@@ -139,11 +103,11 @@ namespace Xuanwu {
             ResizeBytes(size * sizeof(T));
         }
 
-        Array<T> CopyTo(int device) {
-            Array<T> that(allocator_, Count(), device);
-            that.CopyFrom(*this);
-            return that;
-        }
+//        Array<T> CopyTo(int device) {
+//            Array<T> that(allocator_, Count(), device);
+//            that.CopyFrom(*this);
+//            return that;
+//        }
 
         Array<T> Renew(size_t count) const {
             return {allocator_, count};

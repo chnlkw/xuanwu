@@ -183,20 +183,14 @@ namespace Xuanwu {
 
     void DataCopy(DataBasePtr src, size_t src_off, DataBasePtr dst, size_t dst_off, size_t size) {
 
-        auto cputask = std::make_unique<CPUTask>([=](CPUWorker *cpu) {
-            ArrayCopyAsyncPtr(cpu,
-                              dst->GetPtr() + dst_off,
-                              src->GetPtr() + src_off,
-                              size);
+        auto cputask = std::make_unique<CPUTask>([=](CPUContext cpu) {
+            cpu.Copy(dst->GetPtr() + dst_off, src->GetPtr() + src_off, size);
         });
 
-        auto gputask = std::make_unique<GPUTask>([=](GPUWorker *gpu) {
+        auto gputask = std::make_unique<GPUTask>([=](GPUContext gpu) {
 //            std::cout << "Run on GPU " << gpu->Device()->Id() << std::endl;
 //            const T *src = src_.ReadAsync(shared_from_this(), gpu->Device(), gpu->Stream()).data();
-            ArrayCopyAsyncPtr(gpu,
-                              dst->GetPtr() + dst_off,
-                              src->GetPtr() + src_off,
-                              size);
+            gpu.Copy(dst->GetPtr() + dst_off, src->GetPtr() + src_off, size);
         });
 
 //    std::cout << "copy " << src.ToString() << " to " << dst.ToString() << std::endl;
@@ -212,8 +206,4 @@ namespace Xuanwu {
 
     }
 
-    void ArrayCopyAsyncPtr(WorkerPtr worker, Ptr dst, Ptr src, size_t bytes) {
-        LG(INFO) << "ArrayCopyAsync " << *worker << " " << src << " --> " << dst << " bytes=" << bytes;
-        worker->Copy(dst, src, bytes);
-    }
 }

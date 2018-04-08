@@ -32,8 +32,6 @@ namespace Xuanwu {
 
 //    void ArrayCopy(DevicePtr dst_device, void *dst_ptr, DevicePtr src_device, void *src_ptr, size_t bytes);
 
-    void ArrayCopyAsyncPtr(WorkerPtr worker, Ptr dst, Ptr src, size_t bytes);
-
     template<class V>
     void Copy(const V &src, size_t src_off, V &dst, size_t dst_off, size_t count);
 

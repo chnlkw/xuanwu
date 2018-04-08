@@ -31,7 +31,7 @@ namespace Xuanwu {
                     }
                     CLOG(DEBUG, "Worker") << m;
                 }
-                (*cputask)(this);
+                (*cputask)(CPUContext{});
             } else
                 t->Run(this);
             CLOG(INFO, "Worker") << *this << " " << *t << " uses " << clk.timeElapsed() << " seconds";
@@ -42,10 +42,7 @@ namespace Xuanwu {
     }
 
     void CPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
-        if (dst.isCPU() && src.isCPU())
-            memcpy(dst, src, bytes);
-        else if (dst.isGPU() || src.isGPU())
-            cudaMemcpy(dst, src, bytes, cudaMemcpyDefault);
+        CPUCopy(dst, src, bytes);
     }
 
     GPUWorker::GPUWorker(GPUDevice *gpu) :
@@ -78,7 +75,7 @@ namespace Xuanwu {
                 CLOG(DEBUG, "Worker") << m;
             }
             CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
-            (*gputask)(this);
+            (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, t));
         } else {
             CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
             t->Run(this);
@@ -135,7 +132,6 @@ namespace Xuanwu {
     void GPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
         auto gpu = dynamic_cast<GPUDevice *>(device_);
         assert(gpu);
-        CUDA_CALL(cudaSetDevice, gpu->GPUID());
-        cudaMemcpyAsync(dst, src, bytes, cudaMemcpyDefault, stream_);
+        GPUCopy(dst, src, bytes, gpu->GPUID(), stream_);
     }
 }

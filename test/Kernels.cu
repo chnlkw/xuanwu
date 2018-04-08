@@ -3,6 +3,7 @@
 //
 
 #include "Kernels.h"
+#include "../include/xuanwu.hpp"
 
 using namespace Xuanwu;
 template<class F, class... Args>
@@ -20,7 +21,7 @@ void launch_gpu(Lambda lambda, int nblock, int nthread, cudaStream_t stream, int
     for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < N; i += blockDim.x * gridDim.x)
 
 TaskPtr create_taskadd(const Data<int> &a, const Data<int> &b, Data<int> &c) {
-    auto gputask = std::make_unique<GPUTask>([&](GPUWorker *gpu) {
+    auto gputask = std::make_unique<GPUTask>([&](GPUContext gpu) {
         auto l = [=, c = c.data(), b = b.data(), a = a.data(), size = a.size()]
         __device__()
         {
@@ -28,9 +29,9 @@ TaskPtr create_taskadd(const Data<int> &a, const Data<int> &b, Data<int> &c) {
                 c[i] = a[i] + b[i];
             }
         };
-        launch_gpu(l, 1, 1, gpu->Stream());
+        launch_gpu(l, 1, 1, gpu.stream);
     }, 2);
-    auto cputask = std::make_unique<CPUTask>([&](CPUWorker *cpu) {
+    auto cputask = std::make_unique<CPUTask>([&](CPUContext cpu) {
         for (int i = 0; i < c.size(); i++) {
             c[i] = a[i] + b[i];
         }

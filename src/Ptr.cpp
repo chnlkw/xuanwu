@@ -4,7 +4,7 @@
 
 #include "Ptr.h"
 
-void Ptr::log(el::base::type::ostream_t &os) const {
+void Xuanwu::Ptr::log(el::base::type::ostream_t &os) const {
     std::string s;
     switch (type_) {
         case Type::CPU :
@@ -18,4 +18,16 @@ void Ptr::log(el::base::type::ostream_t &os) const {
             break;
     }
     os << s << "[" << ptr_ << "]";
+}
+
+void Xuanwu::GPUCopy(Xuanwu::Ptr dst, Xuanwu::Ptr src, size_t bytes, int gpu_id, cudaStream_t stream) {
+    CUDA_CALL(cudaSetDevice, gpu_id);
+    CUDA_CALL(cudaMemcpyAsync, dst, src, bytes, cudaMemcpyDefault, stream);
+}
+
+void Xuanwu::CPUCopy(Xuanwu::Ptr dst, Xuanwu::Ptr src, size_t bytes) {
+    if (dst.isCPU() && src.isCPU())
+        memcpy(dst, src, bytes);
+    else if (dst.isGPU() || src.isGPU())
+        CUDA_CALL(cudaMemcpy, dst, src, bytes, cudaMemcpyDefault);
 }

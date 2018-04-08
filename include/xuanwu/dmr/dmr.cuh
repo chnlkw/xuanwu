@@ -7,10 +7,10 @@
 
 #include "dmr.h"
 
-#include <xuanwu/Xuanwu.h>
-#include <xuanwu/Task.h>
-#include <xuanwu/Data.h>
-#include <xuanwu/Worker.h>
+#include "../Xuanwu.h"
+#include "../Task.h"
+#include "../Data.h"
+#include "../Worker.h"
 
 namespace Xuanwu {
     template<class T, class TOff>
@@ -28,15 +28,15 @@ namespace Xuanwu {
 
         TaskPtr task(new TaskBase(
                 "Shuffle",
-                std::make_unique<CPUTask>([=](CPUWorker *cpu)mutable {
+                std::make_unique<CPUTask>([=](CPUContext cpu)mutable {
                     for (int i = 0; i < dst.size(); i++) {
                         dst[i] = src[idx[i]];
                     }
                 }),
-                std::make_unique<GPUTask>([=](GPUWorker *gpu) mutable {
+                std::make_unique<GPUTask>([=](GPUContext gpu) mutable {
                     size_t size = src.size();
 //                shuffle_by_idx_gpu(dst.data(), src.data(), idx.data(), src.size(), gpu->Stream());
-                    shuffle_by_idx_kernel << < (size + 31) / 32, 32, 0, gpu->Stream() >> >
+                    shuffle_by_idx_kernel << < (size + 31) / 32, 32, 0, gpu.stream >> >
                                                                         (dst.data(), src.data(), idx.data(), size);
                 })));
         task->AddInputs({src, idx});

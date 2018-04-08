@@ -128,15 +128,14 @@ namespace Xuanwu {
                 arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
             }
             assert(from->GetBytes() >= bytes_);
-            ArrayCopyAsyncPtr(worker, arr->GetPtr(), from->GetPtr(), bytes_);
-//            arr->CopyFromAsync(*from, worker);
+            worker->Copy(arr->GetPtr(), from->GetPtr(), bytes_);
             replicas[dev] = arr;
         }
         if (replicas[dev]->GetBytes() > bytes_)
             replicas[dev]->ResizeBytes(bytes_);
 
-        assert(replicas[dev]->GetBytes() == bytes_);
         current_array_ = replicas[dev];
+        assert(current_array_->GetBytes() >= bytes_);
         return current_array_;
     }
 
@@ -151,14 +150,15 @@ namespace Xuanwu {
                 ++it;
             }
         }
-
         if (!replicas.count(dev)) {
             auto arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
-            if (!replicas.empty())
-                arr->CopyFromAsync(*replicas.begin()->second, worker);
+//            if (!replicas.empty())
+//                worker->Copy(arr->GetPtr(), replicas.begin()->second->GetPtr(), bytes_);
+//                arr->CopyFromAsync(*replicas.begin()->second, worker);
             replicas[dev] = arr;
         }
         current_array_ = replicas[dev];
+        assert(current_array_->GetBytes() >= bytes_);
         return current_array_;
     }
 

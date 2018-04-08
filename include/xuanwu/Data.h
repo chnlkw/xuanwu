@@ -40,7 +40,9 @@ namespace Xuanwu {
 
         virtual Ptr GetPtr() = 0;
 
-        virtual ArrayBasePtr ReadAsync(WorkerPtr worker, DevicePtr device) = 0;
+        using FnCopy = std::function<void(Ptr, Ptr, size_t)>; // copy(dst, src, bytes)
+
+        virtual ArrayBasePtr ReadAsync(WorkerPtr worker, DevicePtr dev) = 0;
 
         ArrayBasePtr ReadAsync(WorkerPtr worker);
 
@@ -89,7 +91,7 @@ namespace Xuanwu {
                 std::shared_ptr<DataBase>(mm->MakeData<T>(vec.size())) {
             Array<T> &arr = Write();
             size_t bytes = vec.size() * sizeof(T);
-            ArrayCopyAsyncPtr(GetDefaultWorker(), arr.GetPtr(), Ptr((void *) vec.data()), bytes);
+            CPUCopy(arr.GetPtr(), Ptr((void *) vec.data()), bytes);
         }
 
         using value_type = T;

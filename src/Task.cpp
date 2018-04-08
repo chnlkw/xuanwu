@@ -6,6 +6,7 @@
 #include "Task.h"
 #include "Worker.h"
 #include "Data.h"
+#include "Device.h"
 
 namespace Xuanwu {
 #define LG(x) CLOG(x, "Task")
@@ -51,6 +52,7 @@ namespace Xuanwu {
     }
 
     void TaskBase::Finish() {
+        tmp_arrays_.clear();
         finished = true;
     }
 
@@ -62,4 +64,13 @@ namespace Xuanwu {
         return finished;
     }
 
+    void TaskBase::AddTempArray(ArrayBasePtr arr) {
+        tmp_arrays_.push_back(arr);
+    }
+
+    ArrayBasePtr GPUContext::MakeArrayBase(size_t bytes) {
+        auto arr = std::make_shared<ArrayBase>(bytes, mm->GetAllocatorByDevice(dev));
+        task->AddTempArray(arr);
+        return arr;
+    }
 }
