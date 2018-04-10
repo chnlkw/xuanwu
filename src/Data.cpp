@@ -106,7 +106,7 @@ namespace Xuanwu {
     DataImpl::DataImpl(MMBase *mm, size_t size) : DataBase(mm, size) {}
 
     void DataImpl::ResizeBytes(size_t bytes) {
-        Wait();
+//        Wait();
         if (bytes_ > 0 && bytes > bytes_) {
             LOG(FATAL) << "Data increasing size not supported yet";
         }

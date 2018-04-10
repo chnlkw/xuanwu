@@ -32,7 +32,6 @@ namespace Xuanwu {
         size_t uid;
 
     public:
-
         virtual ~DataBase() {
 
         }
@@ -113,6 +112,18 @@ namespace Xuanwu {
 
         using value_type = T;
 
+        void Wait() const {
+            get()->Wait();
+        }
+
+        Array<T> &Create(size_t count, DevicePtr device = GetDefaultDevice()) {
+            assert(size() == 0);
+            get()->ResizeBytes(count * sizeof(T));
+            Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->WriteAsync(GetDefaultWorker(), device));
+            return ret;
+        }
+
+
         const Array<T> &Read() const {
             get()->Wait();
             const Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->ReadAsync(GetDefaultWorker()));
@@ -148,9 +159,9 @@ namespace Xuanwu {
             return get()->Bytes() / sizeof(T);
         }
 
-        void resize(size_t count) {
-            get()->ResizeBytes(count * sizeof(T));
-        }
+//        void resize(size_t count) {
+//            get()->ResizeBytes(count * sizeof(T));
+//        }
 
         T *data() { return (T *) get()->data(); }
 

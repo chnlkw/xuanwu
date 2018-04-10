@@ -26,7 +26,7 @@ namespace Xuanwu {
                     if (m.readable) {
                         m.data->ReadAsync(this, device_);
                     }
-                    if (m.writable) {
+                    if (m.writable && m.data->Bytes() > 0) {
                         m.data->WriteAsync(this, device_);
                     }
                     CLOG(DEBUG, "Worker") << m;
@@ -69,7 +69,7 @@ namespace Xuanwu {
                 if (m.readable) {
                     m.data->ReadAsync(this, device_);
                 }
-                if (m.writable) {
+                if (m.writable && m.data->Bytes() > 0) {
                     m.data->WriteAsync(this, device_);
                 }
                 CLOG(DEBUG, "Worker") << m;
