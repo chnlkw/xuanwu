@@ -74,6 +74,8 @@ namespace Xuanwu {
 
         virtual void *data() = 0;
 
+        virtual void clear() = 0;
+
         MMBase *GetMM() const { return mm_; }
 
         size_t GetUID() const { return uid; }
@@ -116,7 +118,12 @@ namespace Xuanwu {
             get()->Wait();
         }
 
+        void clear() {
+            get()->clear();
+        }
+
         Array<T> &Create(size_t count, DevicePtr device = GetDefaultDevice()) {
+            clear();
             assert(size() == 0);
             get()->ResizeBytes(count * sizeof(T));
             Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->WriteAsync(GetDefaultWorker(), device));
@@ -203,6 +210,8 @@ namespace Xuanwu {
         void *data() const override;
 
         void *data() override;
+
+        void clear() override;
 
         float ReadOverhead(DevicePtr dev) override;
 

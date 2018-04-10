@@ -14,6 +14,8 @@ namespace Xuanwu {
     CPUWorker::CPUWorker(CPUDevice *cpu) : WorkerBase(cpu) {}
 
     std::vector<TaskPtr> CPUWorker::GetCompleteTasks() {
+        auto cpu = dynamic_cast<CPUDevice *>(device_);
+        assert(cpu);
         std::vector<TaskPtr> ret;
         for (TaskPtr t : tasks_) {
             CPUTask *cputask = dynamic_cast<CPUTask *>(t.get());
@@ -31,7 +33,7 @@ namespace Xuanwu {
                     }
                     CLOG(DEBUG, "Worker") << m;
                 }
-                (*cputask)(CPUContext{});
+                (*cputask)(CPUContext(cpu));
             } else
                 t->Run(this);
             CLOG(INFO, "Worker") << *this << " " << *t << " uses " << clk.timeElapsed() << " seconds";

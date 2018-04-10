@@ -193,4 +193,11 @@ namespace Xuanwu {
         return current_array_->GetPtr();
     }
 
+    void DataImpl::clear(){
+        replicas.clear();
+        invalids.clear();
+        bytes_ = 0;
+        current_array_ = nullptr;
+
+    }
 }

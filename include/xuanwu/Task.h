@@ -26,9 +26,14 @@
 namespace Xuanwu {
     struct Context {
         virtual void Copy(Ptr dst, Ptr src, size_t bytes) = 0;
+
     };
 
     struct CPUContext : Context {
+        CPUDevice *dev;
+
+        CPUContext(CPUDevice *dev) : dev(dev) {}
+
         void Copy(Ptr dst, Ptr src, size_t bytes) override {
             CPUCopy(dst, src, bytes);
         }
@@ -50,8 +55,8 @@ namespace Xuanwu {
         ArrayBasePtr MakeArrayBase(size_t bytes);
 
         template<class T>
-        T* Alloc(size_t count) {
-            return std::static_pointer_cast<Array<T>>(MakeArrayBase(count*sizeof(T)))->data();
+        T *Alloc(size_t count) {
+            return std::static_pointer_cast<Array<T>>(MakeArrayBase(count * sizeof(T)))->data();
         }
 
         void Copy(Ptr dst, Ptr src, size_t bytes) override {
