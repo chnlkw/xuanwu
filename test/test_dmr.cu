@@ -124,3 +124,29 @@ void test_dmr(size_t npar, size_t num_element, int repeat) {
 TEST(Xuanwu, PartitionedDMR) {
     test_dmr(2, 1000, 1);
 }
+
+__global__ void arr_init(int* a, int n) {
+    int idx = blockIdx.x*blockDim.x+threadIdx.x;
+    if (idx < n)
+        a[idx] = idx;
+}
+
+TEST(Xuanwu, DataCreateInTask) {
+    int n = 10;
+    Data<int> d;
+    auto gpu_task = std::make_unique<GPUTask>([=](GPUContext gpu) mutable {
+        d.Create(n, gpu.dev);
+        arr_init<<<1, n>>>(d.data(), n);
+    });
+    TaskPtr task(new TaskBase(
+        "testcreate",
+        {},
+        std::move(gpu_task)));
+    task->AddOutput(d);
+    Xuanwu::AddTask(task);
+    d.Read();
+    EXPECT_EQ(n, d.size());
+    for (int i = 0 ; i < d.size(); i++) {
+        EXPECT_EQ(i, d[i]);
+    }
+}
