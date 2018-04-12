@@ -44,4 +44,16 @@ bool cudaEnsureSuccess(cudaError_t status, const char *status_context_descriptio
 
 }
 
+
+__global__
+void copy_free_kernel(void* dst, void* src, size_t bytes) {
+    memcpy(dst, src, bytes);
+    free(src);
+}
+
+void run_copy_free_kernel(void* dst, void* src, size_t bytes, cudaStream_t stream) {
+    copy_free_kernel<<<1, 1, 0, stream>>>(dst, src, bytes);
+}
+
+
 #endif

@@ -71,9 +71,14 @@ namespace Xuanwu {
         tmp_arrays_.push_back(arr);
     }
 
+    void TaskBase::AddTempDataMapping(LocalArrayGPU arr, DataBasePtr d) {
+        tmp_data_mapping_.emplace_back(arr, d);
+    }
+
     ArrayBasePtr GPUContext::MakeArrayBase(size_t bytes) {
         auto arr = std::make_shared<ArrayBase>(bytes, mm->GetAllocatorByDevice(dev));
         task->AddTempArray(arr);
         return arr;
     }
+
 }

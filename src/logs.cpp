@@ -16,6 +16,7 @@ namespace Xuanwu {
         os <<"(r:"; for (auto& r : replicas) os <<" " << *r.first; os << ")";
         os <<"(i:"; for (auto& i : invalids) os <<" " << *i.first; os << ")";
     }
+
     void TaskBase::log(el::base::type::ostream_t &os) const {
         os << "Task[" << Name() << "]";
         if (finished) os << " Finished";

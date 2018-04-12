@@ -76,5 +76,9 @@ namespace Xuanwu {
     class AllocatorFactory;
 
     class Devices; // bind to tuple of Devices
+
+    class DeviceArrayBase;
+
+    class LocalArrayGPU;
 }
 #endif //XUANWU_DEFS_H

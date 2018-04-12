@@ -200,4 +200,13 @@ namespace Xuanwu {
         current_array_ = nullptr;
 
     }
+
+    ArrayBasePtr DataImpl::Create(size_t bytes, DevicePtr device) {
+        clear();
+        bytes_ = bytes;
+        auto arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(device));
+        replicas[device] = arr;
+        current_array_ = arr;
+        return current_array_;
+    }
 }

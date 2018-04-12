@@ -107,6 +107,18 @@ namespace Xuanwu {
                 events_unused_.push_back(meta.end_event);
                 events_unused_.push_back(meta.beg_event);
                 events_unused_.push_back(meta.transfer_event);
+
+                for (auto& p : meta.task->GetTempDataMappings()) {
+                    auto &tmp_arr = p.first;
+                    auto &data = p.second;
+                    DeviceArrayBase h_arr;
+                    CUDA_CALL(cudaMemcpyAsync, &h_arr, tmp_arr.GetArrPtr(), sizeof(DeviceArrayBase), cudaMemcpyDefault, stream_);
+                    CUDA_CALL(cudaStreamSynchronize, stream_);
+                    data->Create(h_arr.bytes, device_);
+                    printf("d.data() = %p m.ptr=%p m.bytes=%lu\n", data->data(), h_arr.ptr, h_arr.bytes);
+                    run_copy_free_kernel(data->data(), h_arr.ptr, h_arr.bytes, stream_);
+                    CUDA_CALL(cudaStreamSynchronize, stream_);
+                }
                 break;
             } else if (err == cudaErrorNotReady) {
                 continue;

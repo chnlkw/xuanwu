@@ -17,6 +17,7 @@
 #include "Array.h"
 #include "Device.h"
 
+
 //enum Flag {
 //    Default = 0,
 //    Shared = 1,
@@ -24,61 +25,6 @@
 //};
 
 namespace Xuanwu {
-    struct Context {
-        virtual void Copy(Ptr dst, Ptr src, size_t bytes) = 0;
-
-    };
-
-    struct CPUContext : Context {
-        CPUDevice *dev;
-
-        CPUContext(CPUDevice *dev) : dev(dev) {}
-
-        void Copy(Ptr dst, Ptr src, size_t bytes) override {
-            CPUCopy(dst, src, bytes);
-        }
-    };
-
-    struct GPUContext : Context {
-        cudaStream_t stream;
-        MMBase *mm;
-        GPUDevice *dev;
-        TaskPtr task;
-
-        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, TaskPtr task) :
-                mm(mm),
-                dev(dev),
-                stream(stream),
-                task(task) {
-        }
-
-        ArrayBasePtr MakeArrayBase(size_t bytes);
-
-        template<class T>
-        T *Alloc(size_t count) {
-            return std::static_pointer_cast<Array<T>>(MakeArrayBase(count * sizeof(T)))->data();
-        }
-
-        void Copy(Ptr dst, Ptr src, size_t bytes) override {
-            GPUCopy(dst, src, bytes, dev->GPUID(), stream);
-        }
-    };
-
-    struct GPUTask : public std::function<void(GPUContext)> {
-        int score;
-
-        explicit GPUTask(std::function<void(GPUContext)> f, int score = 2) :
-                std::function<void(GPUContext)>(f),
-                score(score) {
-        }
-    };
-
-    struct CPUTask : public std::function<void(CPUContext)> {
-        int score;
-
-        explicit CPUTask(std::function<void(CPUContext)> f, int score = 1) :
-                std::function<void(CPUContext)>(f), score(score) {}
-    };
 
     class TaskBase : public std::enable_shared_from_this<TaskBase>, public el::Loggable {
         struct Meta : public el::Loggable {
@@ -100,6 +46,7 @@ namespace Xuanwu {
 
         std::vector<Meta> metas_;
         std::vector<ArrayBasePtr> tmp_arrays_;
+        std::vector<std::pair<LocalArrayGPU, DataBasePtr>> tmp_data_mapping_;
         bool finished = false;
 
         friend class Engine;
@@ -149,11 +96,138 @@ namespace Xuanwu {
 
         void AddTempArray(ArrayBasePtr arr);
 
+        void AddTempDataMapping(LocalArrayGPU, DataBasePtr);
+
+        auto& GetTempDataMappings() { return tmp_data_mapping_; }
+
         void Finish();
 
         CPUTask *GetCPUTask() const;
 
         GPUTask *GetGPUTask() const;
+    };
+    struct Context {
+        virtual void Copy(Ptr dst, Ptr src, size_t bytes) = 0;
+
+    };
+
+    struct CPUContext : Context {
+        CPUDevice *dev;
+
+        CPUContext(CPUDevice *dev) : dev(dev) {}
+
+        void Copy(Ptr dst, Ptr src, size_t bytes) override {
+            CPUCopy(dst, src, bytes);
+        }
+    };
+
+    struct DeviceArrayBase {
+        void *ptr;
+        size_t bytes;
+        __device__
+        void Malloc(size_t b) {
+            bytes = b;
+            ptr = malloc(bytes);
+            printf("DeviceArray alloc = %p bytes = %lu\n", ptr, bytes);
+        }
+    };
+
+    template<class T>
+    struct DeviceArray : DeviceArrayBase{
+            __device__
+            void Alloc(size_t n) {
+                Malloc(n * sizeof(T));
+            }
+            __device__
+            T* data() { return (T*)ptr; }
+
+            __device__
+            T* data() const { return (T*)ptr; }
+
+            __device__
+            T& operator[](size_t idx) {
+                return data()[idx];
+            }
+
+            __device__
+            T operator[](size_t idx) const {
+                return data()[idx];
+            }
+    };
+
+    struct LocalArrayGPU {
+
+        DeviceArrayBase* d_arr = nullptr;
+
+        LocalArrayGPU() = default;
+
+        void Create() {
+            CUDA_CALL(cudaMalloc, &d_arr, sizeof(DeviceArrayBase));
+        }
+
+        DeviceArrayBase *GetArrPtr() {
+            return d_arr;
+//        return thrust::raw_pointer_cast(arr.data());
+        }
+
+    };
+    template<class T>
+    struct LocalArray : LocalArrayGPU {
+
+        DeviceArray<T> *GetArrPtr() {
+            return static_cast<DeviceArray<T>*>(d_arr);
+//        return thrust::raw_pointer_cast(arr.data());
+        }
+
+    };
+
+    struct GPUContext : Context {
+        cudaStream_t stream;
+        MMBase *mm;
+        GPUDevice *dev;
+        TaskPtr task;
+
+        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, TaskPtr task) :
+                mm(mm),
+                dev(dev),
+                stream(stream),
+                task(task) {
+        }
+
+        ArrayBasePtr MakeArrayBase(size_t bytes);
+
+        template<class T>
+        LocalArray<T> MakeLocalMapping(Data<T> &d) {
+            LocalArray<T> g;
+            g.Create();
+            task->AddTempDataMapping(g, d);
+            return g;
+        }
+
+        template<class T>
+        T *Alloc(size_t count) {
+            return std::static_pointer_cast<Array<T>>(MakeArrayBase(count * sizeof(T)))->data();
+        }
+
+        void Copy(Ptr dst, Ptr src, size_t bytes) override {
+            GPUCopy(dst, src, bytes, dev->GPUID(), stream);
+        }
+    };
+
+    struct GPUTask : public std::function<void(GPUContext)> {
+        int score;
+
+        explicit GPUTask(std::function<void(GPUContext)> f, int score = 2) :
+                std::function<void(GPUContext)>(f),
+                score(score) {
+        }
+    };
+
+    struct CPUTask : public std::function<void(CPUContext)> {
+        int score;
+
+        explicit CPUTask(std::function<void(CPUContext)> f, int score = 1) :
+                std::function<void(CPUContext)>(f), score(score) {}
     };
 
 }

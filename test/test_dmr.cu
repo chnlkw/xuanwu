@@ -1,6 +1,8 @@
 #include <xuanwu.cuh>
 #include <xuanwu/dmr/PartitionedDMR.h>
 #include <gtest/gtest.h>
+#include "../include/xuanwu.hpp"
+#include "../../../../../../usr/local/cuda/include/driver_types.h"
 
 namespace std {
     template<class K, class V>
@@ -145,8 +147,34 @@ TEST(Xuanwu, DataCreateInTask) {
     task->AddOutput(d);
     Xuanwu::AddTask(task);
     d.Read();
-    EXPECT_EQ(n, d.size());
+    ASSERT_EQ(n, d.size());
     for (int i = 0 ; i < d.size(); i++) {
-        EXPECT_EQ(i, d[i]);
+        ASSERT_EQ(i, d[i]);
+    }
+}
+
+__global__ void local_create_kernel(DeviceArray<int>* arr_ptr) {
+    auto &arr = *arr_ptr;
+    int n = 10;
+    arr.Alloc(n);
+    for (int i = 0; i < n; i++)
+        arr[i] = i;
+}
+
+TEST(Xuanwu, LocalCreateInTask) {
+    Data<int> sz(1);
+    Data<int*> ptr(1);
+    Data<int> d;
+    auto gpu_task = std::make_unique<GPUTask>([=](GPUContext gpu) mutable {
+        LocalArray<int> arr = gpu.MakeLocalMapping(d);
+        local_create_kernel<<<1, 1, 0, gpu.stream>>>(arr.GetArrPtr());
+    });
+    TaskPtr task(new TaskBase( "testlocalCreate", {}, std::move(gpu_task)));
+    task->AddOutputs({d, ptr});
+    Xuanwu::AddTask(task);
+    d.Read();
+    ASSERT_EQ(10, d.size());
+    for (int i = 0 ; i < d.size(); i++) {
+        ASSERT_EQ(i, d[i]);
     }
 }
