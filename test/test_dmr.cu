@@ -166,8 +166,8 @@ TEST(Xuanwu, LocalCreateInTask) {
     Data<int*> ptr(1);
     Data<int> d;
     auto gpu_task = std::make_unique<GPUTask>([=](GPUContext gpu) mutable {
-        LocalArray<int> arr = gpu.MakeLocalMapping(d);
-        local_create_kernel<<<1, 1, 0, gpu.stream>>>(arr.GetArrPtr());
+        DeviceArray<int>* arr = gpu.MakeLocalMapping(d);
+        local_create_kernel<<<1, 1, 0, gpu.stream>>>(arr);
     });
     TaskPtr task(new TaskBase( "testlocalCreate", {}, std::move(gpu_task)));
     task->AddOutputs({d, ptr});

@@ -128,7 +128,7 @@ namespace Xuanwu {
         void Malloc(size_t b) {
             bytes = b;
             ptr = malloc(bytes);
-            printf("DeviceArray alloc = %p bytes = %lu\n", ptr, bytes);
+//            printf("DeviceArray alloc = %p bytes = %lu\n", ptr, bytes);
         }
     };
 
@@ -185,23 +185,25 @@ namespace Xuanwu {
         cudaStream_t stream;
         MMBase *mm;
         GPUDevice *dev;
+        GPUWorker *worker;
         TaskPtr task;
 
-        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, TaskPtr task) :
+        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, GPUWorker* worker, TaskPtr task) :
                 mm(mm),
                 dev(dev),
                 stream(stream),
+                worker(worker),
                 task(task) {
         }
 
         ArrayBasePtr MakeArrayBase(size_t bytes);
 
         template<class T>
-        LocalArray<T> MakeLocalMapping(Data<T> &d) {
+        DeviceArray<T>* MakeLocalMapping(Data<T> &d) {
             LocalArray<T> g;
             g.Create();
             task->AddTempDataMapping(g, d);
-            return g;
+            return g.GetArrPtr();
         }
 
         template<class T>

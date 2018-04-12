@@ -45,14 +45,23 @@ bool cudaEnsureSuccess(cudaError_t status, const char *status_context_descriptio
 }
 
 
+template <class T>
 __global__
-void copy_free_kernel(void* dst, void* src, size_t bytes) {
-    memcpy(dst, src, bytes);
-    free(src);
+void copy_free_kernel(T* dst, T* src, size_t cnt) {
+    for (int i = threadIdx.x; i <cnt; i += blockDim.x)
+        dst[i] = src[i];
+//        memcpy(dst, src, bytes);
+    __syncthreads();
+    if (threadIdx.x == 0)
+        free(src);
 }
 
 void run_copy_free_kernel(void* dst, void* src, size_t bytes, cudaStream_t stream) {
-    copy_free_kernel<<<1, 1, 0, stream>>>(dst, src, bytes);
+    if (bytes % sizeof(int) == 0) {
+        copy_free_kernel<int> << < 1, 1024, 0, stream >> > ((int*)dst, (int*)src, bytes / sizeof(int));
+    } else {
+        copy_free_kernel<char> << < 1, 1024, 0, stream >> > ((char*)dst, (char*)src, bytes);
+    }
 }
 
 

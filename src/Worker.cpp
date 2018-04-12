@@ -77,7 +77,7 @@ namespace Xuanwu {
                 CLOG(DEBUG, "Worker") << m;
             }
             CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
-            (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, t));
+            (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, this, t));
         } else {
             CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
             t->Run(this);
@@ -88,6 +88,9 @@ namespace Xuanwu {
 
     std::vector<TaskPtr> GPUWorker::GetCompleteTasks() {
 #ifdef USE_CUDA
+        auto gpu = dynamic_cast<GPUDevice *>(device_);
+        CUDA_CALL(cudaSetDevice, gpu->GPUID());
+
         std::vector<TaskPtr> ret;
         if (Empty())
             return ret;
@@ -109,13 +112,15 @@ namespace Xuanwu {
                 events_unused_.push_back(meta.transfer_event);
 
                 for (auto& p : meta.task->GetTempDataMappings()) {
+                    TIMED_SCOPE(timerBlkObj, "heavy-iter");
+//                    CLOG(INFO, "Worker") << "Cleaning temp data mapping";
                     auto &tmp_arr = p.first;
                     auto &data = p.second;
                     DeviceArrayBase h_arr;
                     CUDA_CALL(cudaMemcpyAsync, &h_arr, tmp_arr.GetArrPtr(), sizeof(DeviceArrayBase), cudaMemcpyDefault, stream_);
                     CUDA_CALL(cudaStreamSynchronize, stream_);
                     data->Create(h_arr.bytes, device_);
-                    printf("d.data() = %p m.ptr=%p m.bytes=%lu\n", data->data(), h_arr.ptr, h_arr.bytes);
+//                    printf("d.data() = %p m.ptr=%p m.bytes=%lu\n", data->data(), h_arr.ptr, h_arr.bytes);
                     run_copy_free_kernel(data->data(), h_arr.ptr, h_arr.bytes, stream_);
                     CUDA_CALL(cudaStreamSynchronize, stream_);
                 }
