@@ -169,9 +169,9 @@ namespace Xuanwu {
             return get()->Bytes() / sizeof(T);
         }
 
-//        void resize(size_t count) {
-//            get()->ResizeBytes(count * sizeof(T));
-//        }
+        void resize(size_t count) {
+            get()->ResizeBytes(count * sizeof(T));
+        }
 
         T *data() { return (T *) get()->data(); }
 

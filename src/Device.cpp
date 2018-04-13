@@ -10,12 +10,14 @@
 #define LG(x) CLOG(x, "Device")
 
 namespace Xuanwu {
-    GPUDevice::GPUDevice(NumWorkers workers_per_gpu) :
+    GPUDevice::GPUDevice(NumWorkers workers_per_gpu, HeapLimit heap_limit) :
             gpu_id_(GetGPUId()) {
         LG(INFO) << "Create GPUDevice " << this << " num_workers = " << workers_per_gpu << " ID = " << gpu_id_;
         for (int i = 0; i < workers_per_gpu; i++) {
             workers_.emplace_back(new GPUWorker(this));
         }
+        CUDA_CALL(cudaSetDevice, gpu_id_);
+        CUDA_CALL(cudaDeviceSetLimit, cudaLimitMallocHeapSize, heap_limit);
     }
 
     std::vector<TaskPtr> DeviceBase::GetCompleteTasks() {

@@ -31,7 +31,8 @@ namespace Xuanwu {
 
     public:
         using NumWorkers = Strong<unsigned, 2>;
-        GPUDevice(NumWorkers);
+        using HeapLimit = Strong<size_t, 100LU<<20>;
+        GPUDevice(NumWorkers, HeapLimit);
 
         void RunTask(TaskPtr t) override;
 

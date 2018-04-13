@@ -128,7 +128,8 @@ namespace Xuanwu {
         void Malloc(size_t b) {
             bytes = b;
             ptr = malloc(bytes);
-//            printf("DeviceArray alloc = %p bytes = %lu\n", ptr, bytes);
+            if (ptr == nullptr)
+                printf("DeviceArray alloc failed ptr = %p bytes = %lu\n", ptr, bytes);
         }
     };
 

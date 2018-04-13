@@ -112,7 +112,6 @@ namespace Xuanwu {
                 events_unused_.push_back(meta.transfer_event);
 
                 for (auto& p : meta.task->GetTempDataMappings()) {
-                    TIMED_SCOPE(timerBlkObj, "heavy-iter");
 //                    CLOG(INFO, "Worker") << "Cleaning temp data mapping";
                     auto &tmp_arr = p.first;
                     auto &data = p.second;
@@ -128,6 +127,7 @@ namespace Xuanwu {
             } else if (err == cudaErrorNotReady) {
                 continue;
             } else {
+                LOG(ERROR) << *this << " Run task error " << *meta.task << " err = " << cudaGetErrorString(cudaGetLastError());
                 CUDA_CHECK();
             }
         }

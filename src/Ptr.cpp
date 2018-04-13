@@ -21,13 +21,16 @@ void Xuanwu::Ptr::log(el::base::type::ostream_t &os) const {
 }
 
 void Xuanwu::GPUCopy(Xuanwu::Ptr dst, Xuanwu::Ptr src, size_t bytes, int gpu_id, cudaStream_t stream) {
+    CLOG(INFO, "DataCopy") << "GPUCopy " << src << " to " << dst << " stream = " << stream;
     CUDA_CALL(cudaSetDevice, gpu_id);
     CUDA_CALL(cudaMemcpyAsync, dst, src, bytes, cudaMemcpyDefault, stream);
 }
 
 void Xuanwu::CPUCopy(Xuanwu::Ptr dst, Xuanwu::Ptr src, size_t bytes) {
+    CLOG(INFO, "DataCopy") << "CPUCopy " << src << " to " << dst;
     if (dst.isCPU() && src.isCPU())
         memcpy(dst, src, bytes);
-    else if (dst.isGPU() || src.isGPU())
+    else if (dst.isGPU() || src.isGPU()) {
         CUDA_CALL(cudaMemcpy, dst, src, bytes, cudaMemcpyDefault);
+    }
 }
