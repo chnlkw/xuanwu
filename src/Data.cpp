@@ -118,6 +118,7 @@ namespace Xuanwu {
     }
 
     bool DataImpl::ReadAsync(WorkerPtr worker, DevicePtr dev) {
+        LG(DEBUG) << "DataImpl ReadAsync " << *this << " at " << *dev;
         if (replicas.count(dev) == 0) {
             ArrayBasePtr arr;
             LOG_IF(replicas.empty(), FATAL) << *this << " calls ReadAsync() with no replicas";
@@ -128,14 +129,18 @@ namespace Xuanwu {
             } else {
                 arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
             }
-            ArrayBasePtr from;
+            decltype(replicas.begin()) from;
             int max_copy_speed = 0;
-            for (auto &r : replicas) {
-                if (max_copy_speed < CopySpeed(arr->GetPtr(), r.second.first->GetPtr()))
-                    from = r.second.first;
+            for (auto it = replicas.begin(); it != replicas.end(); ++it) {
+//            for (auto &r : replicas) {
+                if (max_copy_speed < CopySpeed(arr->GetPtr(), it->second.first->GetPtr()))
+                    from = it;
             }
-            assert(from->GetBytes() >= bytes_);
-            Event event = worker->Copy(arr->GetPtr(), from->GetPtr(), bytes_);
+            if (!from->second.second->QueryFinished()) {
+                return false;
+            }
+            assert(from->second.first->GetBytes() >= bytes_);
+            Event event = worker->Copy(arr->GetPtr(), from->second.first->GetPtr(), bytes_);
             replicas[dev] = {arr, std::move(event)};
         }
         if (replicas[dev].first->GetBytes() > bytes_)

@@ -177,6 +177,7 @@ TEST(Xuanwu, LocalCreateInTask) {
     for (int i = 0 ; i < d.size(); i++) {
         ASSERT_EQ(i, d[i]);
     }
+    while(Xuanwu::Tick());
 }
 
 __global__

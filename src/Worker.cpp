@@ -24,7 +24,7 @@ namespace Xuanwu {
             CLOG(INFO, "Worker") << *this << " Run " << *t;
             Clock clk;
             if (cputask) {
-                for (auto &m : t->GetMetas()) {
+                for (auto &m : t->Metas()) {
                     if (m.readable) {
                         while (!m.data->ReadAsync(this, device_));
                     }
@@ -54,40 +54,14 @@ namespace Xuanwu {
         CUDA_CALL(cudaStreamCreate, &stream_);
     }
 
-    bool GPUWorker::RunTask(TaskPtr t) {
+    void GPUWorker::RunTask(TaskPtr t) {
         auto gpu = dynamic_cast<GPUDevice *>(device_);
         assert(gpu);
         CUDA_CALL(cudaSetDevice, gpu->GPUID());
 
-        Meta meta{GetEvent(), GetEvent(), GetEvent(), t};
-        CUDA_CALL(cudaEventRecord, meta.beg_event, stream_);
+        Meta meta{GetEvent(), GetEvent(), GetEvent(), t, t->Metas()};
 
-        auto gputask = dynamic_cast<GPUTask *>(t.get());
-        if (!gputask)
-            gputask = t->GetGPUTask();
-        if (gputask) {
-            for (auto &m : t->GetMetas()) {
-                if (m.readable) {
-                    if (!m.data->ReadAsync(this, device_))
-                        return false;
-                }
-                if (m.writable && m.data->Bytes() > 0) {
-                    if (!m.data->WriteAsync(this, device_))
-                        return false;
-                }
-                CLOG(DEBUG, "Worker") << m;
-            }
-            CLOG(INFO, "Worker") << *this << " Run " << *t;
-            CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
-            (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, this, t));
-        } else {
-            CLOG(INFO, "Worker") << *this << " RunOld " << *t;
-            CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
-            t->Run(this);
-        }
-        CUDA_CALL(cudaEventRecord, meta.end_event, stream_);
         queue_.push_back(meta);
-        return true;
     }
 
     std::vector<TaskPtr> GPUWorker::GetCompleteTasks() {
@@ -96,14 +70,61 @@ namespace Xuanwu {
         CUDA_CALL(cudaSetDevice, gpu->GPUID());
 
         std::vector<TaskPtr> ret;
-        if (Empty())
-            return ret;
+        while (!Empty()) {
+            Meta &meta = queue_.front();
+            TaskPtr &t = meta.task;
+            CLOG(DEBUG, "Worker") << *this << " Query " << t << " " << *t;
+            if (!meta.timer_started) {
+                CUDA_CALL(cudaEventRecord, meta.beg_event, stream_);
+                meta.timer_started = true;
+                CLOG(DEBUG, "Worker") << *this << " timer_started " << t << " " << *t;
+            }
 
-        while (true) {
-            Meta meta = queue_.front();
+            if (!meta.started) {
+                CLOG(DEBUG, "Worker") << *this << " try prepare data " << t << " " << *t;
+                auto gputask = dynamic_cast<GPUTask *>(t.get());
+                if (!gputask)
+                    gputask = t->GetGPUTask();
+                if (gputask) {
+                    for (auto it = meta.task_metas.begin(); it != meta.task_metas.end();) {
+                        auto &m = *it;
+                        if (m.readable) {
+                            if (!m.data->ReadAsync(this, device_))
+                                return ret;
+                        }
+                        if (m.writable && m.data->Bytes() > 0) {
+                            if (!m.data->WriteAsync(this, device_))
+                                return ret;
+                        }
+                        CLOG(DEBUG, "Worker") << "s1 " << m;
+                        it = meta.task_metas.erase(it);
+                    }
+                    // make sure data.currentarray is set to this device
+                    for (auto &m : t->Metas()) {
+                        if (m.readable) {
+                            while (!m.data->ReadAsync(this, device_));
+                        }
+                        if (m.writable && m.data->Bytes() > 0) {
+                            while (!m.data->WriteAsync(this, device_));
+                        }
+                        CLOG(DEBUG, "Worker") << "s2 " << m;
+                    }
+                    CLOG(INFO, "Worker") << *this << " Run " << t << " " << *t;
+                    CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
+                    (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, this, t));
+                } else {
+                    CLOG(ERROR, "Worker") << *this << " RunOld " << t << " " << *t;
+                    CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
+                    t->Run(this);
+                }
+                CUDA_CALL(cudaEventRecord, meta.end_event, stream_);
+                meta.started = true;
+            }
+
             cudaError_t err = cudaEventQuery(meta.end_event);
+
             if (err == cudaSuccess) {
-                queue_.pop_front();
+
                 float tranfer_ms, calc_ms;
                 CUDA_CALL(cudaEventElapsedTime, &tranfer_ms, meta.beg_event, meta.transfer_event);
                 CUDA_CALL(cudaEventElapsedTime, &calc_ms, meta.transfer_event, meta.end_event);
@@ -128,9 +149,9 @@ namespace Xuanwu {
                     run_copy_free_kernel(data->data(), h_arr.ptr, h_arr.bytes, stream_);
                     CUDA_CALL(cudaStreamSynchronize, stream_);
                 }
-                break;
+                queue_.pop_front();
             } else if (err == cudaErrorNotReady) {
-                continue;
+                return ret;
             } else {
                 LOG(ERROR) << *this << " Run task error " << *meta.task << " err = "
                            << cudaGetErrorString(cudaGetLastError());

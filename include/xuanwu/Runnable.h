@@ -7,7 +7,7 @@
 namespace Xuanwu {
     class Runnable {
     public:
-        virtual bool RunTask(TaskPtr) = 0; // return true if task successfully started. return false if need retry
+        virtual void RunTask(TaskPtr) = 0;
 
         virtual size_t NumRunningTasks() const = 0;
 

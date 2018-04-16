@@ -9,6 +9,7 @@
 #include "cuda_utils.h"
 #include "Runnable.h"
 #include "Ptr.h"
+#include "Task.h"
 #include <deque>
 
 namespace Xuanwu {
@@ -37,9 +38,8 @@ namespace Xuanwu {
     public:
         explicit CPUWorker(CPUDevice *cpu);
 
-        bool RunTask(TaskPtr t) override {
+        void RunTask(TaskPtr t) override {
             tasks_.push_back(t);
-            return true;
         }
 
         bool Empty() const override { return tasks_.empty(); }
@@ -59,6 +59,9 @@ namespace Xuanwu {
         struct Meta {
             cudaEvent_t beg_event, transfer_event, end_event;
             TaskPtr task;
+            std::vector<::Xuanwu::TaskBase::Meta> task_metas;
+            bool timer_started = false;
+            bool started = false;
         };
         std::deque<Meta> queue_;
 
@@ -75,7 +78,7 @@ namespace Xuanwu {
 
     private:
 
-        bool RunTask(TaskPtr t) override;
+        void RunTask(TaskPtr t) override;
 
         size_t NumRunningTasks() const override {
             return queue_.size();
@@ -86,6 +89,7 @@ namespace Xuanwu {
         std::vector<TaskPtr> GetCompleteTasks() override;
 
         Event Copy(Ptr dst, Ptr src, size_t bytes) override;
+
     };
 
 }

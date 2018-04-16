@@ -14,7 +14,7 @@ namespace Xuanwu {
 
         CPUDevice();
 
-        bool RunTask(TaskPtr t) override;
+        void RunTask(TaskPtr t) override;
 
         int ScoreRunTask(TaskPtr t) override;
 
@@ -34,7 +34,7 @@ namespace Xuanwu {
         using HeapLimit = Strong<size_t, 100LU<<20>;
         GPUDevice(NumWorkers, HeapLimit);
 
-        bool RunTask(TaskPtr t) override;
+        void RunTask(TaskPtr t) override;
 
         int ScoreRunTask(TaskPtr t) override;
 

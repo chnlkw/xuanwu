@@ -68,11 +68,8 @@ namespace Xuanwu {
         }
 
         for (auto it = ready_tasks_.begin(); it != ready_tasks_.end();) {
-            if (RunTask(*it)) {
-                it = ready_tasks_.erase(it);
-            } else {
-                ++it;
-            }
+            RunTask(*it);
+            it = ready_tasks_.erase(it);
         }
         ticking = false;
         return true;
@@ -82,7 +79,7 @@ namespace Xuanwu {
         LG(DEBUG) << " Choose Device of " << *t;
         std::map<DevicePtr, float> dev_score;
         for (auto &dev : devices_) {
-            for (auto &m : t->GetMetas()) {
+            for (auto &m : t->Metas()) {
                 if (m.readable)
                     dev_score[dev.get()] += 1.0 / (1 + m.data->ReadOverhead(dev.get()));
                 else
@@ -94,7 +91,7 @@ namespace Xuanwu {
 //            LG(DEBUG) << *t << "is runnable on " << *dev;
         }
         assert(!dev_score.empty());
-        for (auto &m : t->GetMetas()) {
+        for (auto &m : t->Metas()) {
             if (!m.readable) {
                 if (auto dev = data_steps_[m.data->GetUID()].DeviceChosen()) {
                     LG(DEBUG) << *dev << " has been chosen by data " << m.data;
@@ -113,7 +110,7 @@ namespace Xuanwu {
                                                 [](auto a, auto b) { return a.second < b.second; })->first;
 //    return ChooseRunnable(devices_.begin(), devices_.end()).get();
         LG(INFO) << "Choose " << *dev_chosen << " to run " << *t;
-        for (auto &m : t->GetMetas()) {
+        for (auto &m : t->Metas()) {
             if (!m.readable) {
                 data_steps_[m.data->GetUID()].ChooseDevice(dev_chosen);
             }
@@ -132,7 +129,7 @@ namespace Xuanwu {
             --tasks_[t].in_degree;
             CheckTaskReady(t);
         }
-        for (auto &m : task->GetMetas()) {
+        for (auto &m : task->Metas()) {
             data_steps_[m.data->GetUID()].UnregisterTask(task);
         }
         task->Finish();
@@ -143,7 +140,7 @@ namespace Xuanwu {
     TaskBase &Engine::AddTask(TaskPtr task) {
         LG(INFO) << "AddTask " << *task;
         num_running_tasks_++;
-        for (auto &m : task->GetMetas()) {
+        for (auto &m : task->Metas()) {
             m.data->RegisterTask(task);
             LG(DEBUG) << "RegisterTask " << *task << " " << *m.data << " writable=" << m.writable;
             const auto &depend_tasks = data_steps_[m.data->GetUID()].RegisterTask(task, m.writable);
@@ -172,9 +169,9 @@ namespace Xuanwu {
         return complete_tasks;
     }
 
-    bool Engine::RunTask(TaskPtr task) {
+    void Engine::RunTask(TaskPtr task) {
         DevicePtr d = ChooseDevice(task);
-        return d->RunTask(task);
+        d->RunTask(task);
     }
 
     std::vector<TaskPtr> Engine::DataStep::RegisterTask(TaskPtr task, bool writable) {

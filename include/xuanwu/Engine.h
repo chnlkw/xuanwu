@@ -86,7 +86,7 @@ namespace Xuanwu {
             return AddTask(t);
         }
 
-        bool RunTask(TaskPtr t) override;
+        void RunTask(TaskPtr t) override;
 
         bool Tick();
 

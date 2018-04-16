@@ -27,6 +27,7 @@
 namespace Xuanwu {
 
     class TaskBase : public std::enable_shared_from_this<TaskBase>, public el::Loggable {
+    public:
         struct Meta : public el::Loggable {
             DataBasePtr data;
             bool readable = false;
@@ -43,6 +44,7 @@ namespace Xuanwu {
 
             void log(el::base::type::ostream_t &os) const override;
         };
+    private:
 
         std::vector<Meta> metas_;
         std::vector<ArrayBasePtr> tmp_arrays_;
@@ -61,7 +63,7 @@ namespace Xuanwu {
 
         TaskBase(const TaskBase &) = delete;
 
-        const auto &GetMetas() const {
+        const auto &Metas() {
 //            std::sort(metas_.begin(), metas_.end());
             return metas_;
         }
