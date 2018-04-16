@@ -67,11 +67,13 @@ namespace Xuanwu {
             return false;
         }
 
-        for (auto t : ready_tasks_) {
-            DevicePtr d = ChooseDevice(t);
-            d->RunTask(t);
+        for (auto it = ready_tasks_.begin(); it != ready_tasks_.end();) {
+            if (RunTask(*it)) {
+                it = ready_tasks_.erase(it);
+            } else {
+                ++it;
+            }
         }
-        ready_tasks_.clear();
         ticking = false;
         return true;
     }
@@ -108,7 +110,7 @@ namespace Xuanwu {
         }
         assert(!dev_score.empty());
         DevicePtr dev_chosen = std::max_element(dev_score.begin(), dev_score.end(),
-                                                 [](auto a, auto b) { return a.second < b.second; })->first;
+                                                [](auto a, auto b) { return a.second < b.second; })->first;
 //    return ChooseRunnable(devices_.begin(), devices_.end()).get();
         LG(INFO) << "Choose " << *dev_chosen << " to run " << *t;
         for (auto &m : t->GetMetas()) {
@@ -139,9 +141,19 @@ namespace Xuanwu {
     }
 
     TaskBase &Engine::AddTask(TaskPtr task) {
-        RunTask(task);
         LG(INFO) << "AddTask " << *task;
-
+        num_running_tasks_++;
+        for (auto &m : task->GetMetas()) {
+            m.data->RegisterTask(task);
+            LG(DEBUG) << "RegisterTask " << *task << " " << *m.data << " writable=" << m.writable;
+            const auto &depend_tasks = data_steps_[m.data->GetUID()].RegisterTask(task, m.writable);
+            for (const auto &depend_task : depend_tasks) {
+//                if (!depend_task.expired())
+//                    AddEdge(depend_task.lock(), task);
+                AddEdge(depend_task, task);
+            }
+        }
+        CheckTaskReady(task);
         return *task;
     }
 
@@ -160,20 +172,9 @@ namespace Xuanwu {
         return complete_tasks;
     }
 
-    void Engine::RunTask(TaskPtr task) {
-        LG(INFO) << "RunTask " << *task;
-        num_running_tasks_++;
-        for (auto &m : task->GetMetas()) {
-            m.data->RegisterTask(task);
-            LG(DEBUG) << "RegisterTask " << *task << " " << *m.data << " writable=" << m.writable;
-            const auto &depend_tasks = data_steps_[m.data->GetUID()].RegisterTask(task, m.writable);
-            for (const auto &depend_task : depend_tasks) {
-//                if (!depend_task.expired())
-//                    AddEdge(depend_task.lock(), task);
-                AddEdge(depend_task, task);
-            }
-        }
-        CheckTaskReady(task);
+    bool Engine::RunTask(TaskPtr task) {
+        DevicePtr d = ChooseDevice(task);
+        return d->RunTask(task);
     }
 
     std::vector<TaskPtr> Engine::DataStep::RegisterTask(TaskPtr task, bool writable) {
@@ -196,7 +197,7 @@ namespace Xuanwu {
             steps_.pop_front();
     }
 
-    DevicePtr Engine::DataStep::ChooseDevice(DevicePtr device) {
+    void Engine::DataStep::ChooseDevice(DevicePtr device) {
         assert(DeviceChosen() == nullptr || DeviceChosen() == device);
         assert(steps_.at(0).is_write);
         steps_.at(0).device_chosen_ = device;

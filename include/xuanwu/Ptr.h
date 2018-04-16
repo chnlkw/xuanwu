@@ -8,6 +8,7 @@
 #include "defs.h"
 #include <easylogging++.h>
 #include "cuda_utils.h"
+#include "Event.h"
 
 namespace Xuanwu {
 
@@ -42,9 +43,11 @@ namespace Xuanwu {
         Type type_;
     };
 
-    void CPUCopy(Ptr dst, Ptr src, size_t bytes);
+    Event CPUCopy(Ptr dst, Ptr src, size_t bytes);
 
-    void GPUCopy(Ptr dst, Ptr src, size_t bytes, int gpu_id, cudaStream_t stream);
+    Event GPUCopy(Ptr dst, Ptr src, size_t bytes, int gpu_id, cudaStream_t stream);
+
+    int CopySpeed(Ptr dst, Ptr src);
 }
 
 #endif //XUANWU_PTR_H

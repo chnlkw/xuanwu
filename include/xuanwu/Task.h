@@ -183,9 +183,9 @@ namespace Xuanwu {
     };
 
     struct GPUContext : Context {
-        cudaStream_t stream;
         MMBase *mm;
         GPUDevice *dev;
+        cudaStream_t stream;
         GPUWorker *worker;
         TaskPtr task;
 

@@ -15,15 +15,16 @@
 namespace Xuanwu {
     class DataBase : public el::Loggable {
     protected:
+
+        MMBase *mm_;
+
         size_t bytes_ = 0;
 
         mutable std::deque<std::weak_ptr<TaskBase>> tasks_scheduled_;
 
-        const std::vector<std::weak_ptr<TaskBase>> &RegisterTask(const TaskPtr &t);
+        void RegisterTask(const TaskPtr &t);
 
         friend class Engine;
-
-        MMBase *mm_;
 
         std::string name_ = "Noname";
 
@@ -32,9 +33,7 @@ namespace Xuanwu {
         size_t uid;
 
     public:
-        virtual ~DataBase() {
-
-        }
+        virtual ~DataBase() = default;
 
         explicit DataBase(MMBase *mm, size_t bytes) : mm_(mm), bytes_(bytes), uid(s_uid++) {}
 
@@ -50,13 +49,13 @@ namespace Xuanwu {
 
         using FnCopy = std::function<void(Ptr, Ptr, size_t)>; // copy(dst, src, bytes)
 
-        virtual ArrayBasePtr ReadAsync(WorkerPtr worker, DevicePtr dev) = 0;
+        virtual bool ReadAsync(WorkerPtr worker, DevicePtr dev) = 0;
 
-        ArrayBasePtr ReadAsync(WorkerPtr worker);
+        bool ReadAsync(WorkerPtr worker);
 
-        virtual ArrayBasePtr WriteAsync(WorkerPtr worker, DevicePtr dev) = 0;
+        virtual bool WriteAsync(WorkerPtr worker, DevicePtr dev) = 0;
 
-        ArrayBasePtr WriteAsync(WorkerPtr worker);
+        bool WriteAsync(WorkerPtr worker);
 
         virtual float ReadOverhead(DevicePtr device) = 0;
 
@@ -76,7 +75,9 @@ namespace Xuanwu {
 
         virtual void clear() = 0;
 
-        virtual ArrayBasePtr Create(size_t bytes, DevicePtr device) = 0;
+        virtual void Create(size_t bytes, DevicePtr device) = 0;
+
+        virtual ArrayBasePtr CurrentArray() const = 0;
 
         MMBase *GetMM() const { return mm_; }
 
@@ -109,9 +110,9 @@ namespace Xuanwu {
 
         explicit Data(const std::vector<T> &vec, MMBase *mm = GetDefaultMM()) :
                 std::shared_ptr<DataBase>(mm->MakeData<T>(vec.size())) {
-            Array<T> &arr = Write();
+            Write();
             size_t bytes = vec.size() * sizeof(T);
-            CPUCopy(arr.GetPtr(), Ptr((void *) vec.data()), bytes);
+            CPUCopy(CurrentArray().GetPtr(), Ptr((void *) vec.data()), bytes);
         }
 
         using value_type = T;
@@ -125,45 +126,25 @@ namespace Xuanwu {
         }
 
         Array<T> &Create(size_t count, DevicePtr device = GetDefaultDevice()) {
-            Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->Create(count * sizeof(T), device));
-            return ret;
-//            clear();
-//            assert(size() == 0);
-//            get()->ResizeBytes(count * sizeof(T));
-//            Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->WriteAsync(GetDefaultWorker(), device));
+            get()->Create(count * sizeof(T), device);
+            return CurrentArray();
         }
 
+        Array<T> &CurrentArray() const {
+            return *std::static_pointer_cast<Array<T>>(get()->CurrentArray());
+        }
 
-        const Array<T> &Read() const {
+        Array<T> &Read() const {
             get()->Wait();
-            const Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->ReadAsync(GetDefaultWorker()));
-            return ret;
+            get()->ReadAsync(GetDefaultWorker());
+            return CurrentArray();
         }
 
         Array<T> &Write() {
             get()->Wait();
-            Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->WriteAsync(GetDefaultWorker()));
-            return ret;
+            get()->WriteAsync(GetDefaultWorker());
+            return CurrentArray();
         }
-
-        const Array<T> &ReadAsync(WorkerPtr worker, DevicePtr device) const {
-            const Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->ReadAsync(worker, device));
-            return ret;
-        }
-
-        Array<T> &WriteAsync(WorkerPtr worker, DevicePtr device) const {
-            Array<T> &ret = *std::static_pointer_cast<Array<T>>(get()->WriteAsync(worker, device));
-            return ret;
-        }
-
-//        std::vector<ArrayPtr<T>> GetReplicas() const {
-//            std::vector<ArrayBasePtr> replicas = get()->GetReplicas();
-//            std::vector<ArrayPtr<T>> ret;
-//            ret.reserve(replicas.size());
-//            for (auto &e : replicas)
-//                ret.push_back(std::static_pointer_cast<Array<T>>(e));
-//            return ret;
-//        }
 
         size_t size() const {
             return get()->Bytes() / sizeof(T);
@@ -196,7 +177,7 @@ namespace Xuanwu {
     };
 
     class DataImpl : public DataBase {
-        std::map<DevicePtr, ArrayBasePtr> replicas;
+        std::map<DevicePtr, std::pair<ArrayBasePtr, Event>> replicas;
         std::map<DevicePtr, ArrayBasePtr> invalids;
 
         mutable ArrayBasePtr current_array_ = nullptr;
@@ -206,9 +187,9 @@ namespace Xuanwu {
 
         void ResizeBytes(size_t bytes) override;
 
-        ArrayBasePtr ReadAsync(WorkerPtr worker, DevicePtr dev) override;
+        bool ReadAsync(WorkerPtr worker, DevicePtr dev) override;
 
-        ArrayBasePtr WriteAsync(WorkerPtr worker, DevicePtr dev) override;
+        bool WriteAsync(WorkerPtr worker, DevicePtr dev) override;
 
         void *data() const override;
 
@@ -216,7 +197,9 @@ namespace Xuanwu {
 
         void clear() override;
 
-        ArrayBasePtr Create(size_t bytes, DevicePtr device) override ;
+        void Create(size_t bytes, DevicePtr device) override;
+
+        ArrayBasePtr CurrentArray() const override;
 
         float ReadOverhead(DevicePtr dev) override;
 

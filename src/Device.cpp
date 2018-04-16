@@ -29,8 +29,8 @@ namespace Xuanwu {
         return ret;
     }
 
-    void GPUDevice::RunTask(TaskPtr t) {
-        ChooseRunnable(workers_.begin(), workers_.end())->RunTask(t);
+    bool GPUDevice::RunTask(TaskPtr t) {
+        return ChooseRunnable(workers_.begin(), workers_.end())->RunTask(t);
     }
 
     DeviceBase::DeviceBase() {
@@ -45,9 +45,9 @@ namespace Xuanwu {
                  << workers_.size() << " ID = ";
     }
 
-    void CPUDevice::RunTask(TaskPtr t) {
-        workers_.at(0)->RunTask(t);
+    bool CPUDevice::RunTask(TaskPtr t) {
         LG(INFO) << "CPUDevice run task " << *t;
+        return workers_.at(0)->RunTask(t);
     }
 
     int DeviceBase::ScoreRunTask(TaskPtr t) {

@@ -24,7 +24,7 @@ namespace std {
 TEST(Xuanwu, AddTask) {
     auto print = [](const auto &arr) {
         printf("%p : ", &arr[0]);
-        for (int i = 0; i < arr.size(); i++) {
+        for (unsigned i = 0; i < arr.size(); i++) {
             printf("%d ", arr[i]);
         }
         printf("\n");
@@ -34,7 +34,7 @@ TEST(Xuanwu, AddTask) {
     d1.Write();
     auto d2 = Data<int>(d1.size());
     d2.Write();
-    for (int i = 0; i < d1.size(); i++) {
+    for (unsigned i = 0; i < d1.size(); i++) {
         d1[i] = i;
         d2[i] = i * i;
     }
@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
 
     auto injector = di::make_injector(
             di::bind<>.to(GPUDevice::NumWorkers{1}),
-            di::bind<AllocatorFactory<CPUDevice>>().to<CPUAllocatorFactory>(),
+            di::bind<AllocatorFactory<CPUDevice>>().to<CudaHostAllocatorFactory>(),
 //            di::bind<AllocatorFactory<GPUDevice>>().to<CudaAllocatorFactory>(),
             di::bind<AllocatorFactory<GPUDevice>>().to<PreAllocatorFactory<CudaAllocatorFactory>>(),
             di::bind<>.to(PreAllocatorFactory<CudaAllocatorFactory>::Space{1<<30}),
@@ -92,5 +92,5 @@ int main(int argc, char **argv) {
 
     int ret = RUN_ALL_TESTS();
 
-    return 0;
+    return ret;
 }

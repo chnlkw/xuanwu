@@ -26,10 +26,10 @@ namespace Xuanwu {
             if (cputask) {
                 for (auto &m : t->GetMetas()) {
                     if (m.readable) {
-                        m.data->ReadAsync(this, device_);
+                        while (!m.data->ReadAsync(this, device_));
                     }
                     if (m.writable && m.data->Bytes() > 0) {
-                        m.data->WriteAsync(this, device_);
+                        while (!m.data->WriteAsync(this, device_));
                     }
                     CLOG(DEBUG, "Worker") << m;
                 }
@@ -43,8 +43,8 @@ namespace Xuanwu {
         return ret;
     }
 
-    void CPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
-        CPUCopy(dst, src, bytes);
+    Event CPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
+        return CPUCopy(dst, src, bytes);
     }
 
     GPUWorker::GPUWorker(GPUDevice *gpu) :
@@ -54,7 +54,7 @@ namespace Xuanwu {
         CUDA_CALL(cudaStreamCreate, &stream_);
     }
 
-    void GPUWorker::RunTask(TaskPtr t) {
+    bool GPUWorker::RunTask(TaskPtr t) {
         auto gpu = dynamic_cast<GPUDevice *>(device_);
         assert(gpu);
         CUDA_CALL(cudaSetDevice, gpu->GPUID());
@@ -65,25 +65,29 @@ namespace Xuanwu {
         auto gputask = dynamic_cast<GPUTask *>(t.get());
         if (!gputask)
             gputask = t->GetGPUTask();
-        CLOG(INFO, "Worker") << *this << " Run " << *t;
         if (gputask) {
             for (auto &m : t->GetMetas()) {
                 if (m.readable) {
-                    m.data->ReadAsync(this, device_);
+                    if (!m.data->ReadAsync(this, device_))
+                        return false;
                 }
                 if (m.writable && m.data->Bytes() > 0) {
-                    m.data->WriteAsync(this, device_);
+                    if (!m.data->WriteAsync(this, device_))
+                        return false;
                 }
                 CLOG(DEBUG, "Worker") << m;
             }
+            CLOG(INFO, "Worker") << *this << " Run " << *t;
             CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
             (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, this, t));
         } else {
+            CLOG(INFO, "Worker") << *this << " RunOld " << *t;
             CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
             t->Run(this);
         }
         CUDA_CALL(cudaEventRecord, meta.end_event, stream_);
         queue_.push_back(meta);
+        return true;
     }
 
     std::vector<TaskPtr> GPUWorker::GetCompleteTasks() {
@@ -111,12 +115,13 @@ namespace Xuanwu {
                 events_unused_.push_back(meta.beg_event);
                 events_unused_.push_back(meta.transfer_event);
 
-                for (auto& p : meta.task->GetTempDataMappings()) {
+                for (auto &p : meta.task->GetTempDataMappings()) {
 //                    CLOG(INFO, "Worker") << "Cleaning temp data mapping";
                     auto &tmp_arr = p.first;
                     auto &data = p.second;
                     DeviceArrayBase h_arr;
-                    CUDA_CALL(cudaMemcpyAsync, &h_arr, tmp_arr.GetArrPtr(), sizeof(DeviceArrayBase), cudaMemcpyDefault, stream_);
+                    CUDA_CALL(cudaMemcpyAsync, &h_arr, tmp_arr.GetArrPtr(), sizeof(DeviceArrayBase), cudaMemcpyDefault,
+                              stream_);
                     CUDA_CALL(cudaStreamSynchronize, stream_);
                     data->Create(h_arr.bytes, device_);
 //                    printf("d.data() = %p m.ptr=%p m.bytes=%lu\n", data->data(), h_arr.ptr, h_arr.bytes);
@@ -127,7 +132,8 @@ namespace Xuanwu {
             } else if (err == cudaErrorNotReady) {
                 continue;
             } else {
-                LOG(ERROR) << *this << " Run task error " << *meta.task << " err = " << cudaGetErrorString(cudaGetLastError());
+                LOG(ERROR) << *this << " Run task error " << *meta.task << " err = "
+                           << cudaGetErrorString(cudaGetLastError());
                 CUDA_CHECK();
             }
         }
@@ -148,9 +154,9 @@ namespace Xuanwu {
         return e;
     }
 
-    void GPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
+    Event GPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
         auto gpu = dynamic_cast<GPUDevice *>(device_);
         assert(gpu);
-        GPUCopy(dst, src, bytes, gpu->GPUID(), stream_);
+        return GPUCopy(dst, src, bytes, gpu->GPUID(), stream_);
     }
 }

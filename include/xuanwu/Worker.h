@@ -26,7 +26,7 @@ namespace Xuanwu {
             return device_;
         }
 
-        virtual void Copy(Ptr dst, Ptr src, size_t bytes) = 0;
+        virtual Event Copy(Ptr dst, Ptr src, size_t bytes) = 0;
 
         virtual void log(el::base::type::ostream_t &os) const;
     };
@@ -37,8 +37,9 @@ namespace Xuanwu {
     public:
         explicit CPUWorker(CPUDevice *cpu);
 
-        void RunTask(TaskPtr t) override {
+        bool RunTask(TaskPtr t) override {
             tasks_.push_back(t);
+            return true;
         }
 
         bool Empty() const override { return tasks_.empty(); }
@@ -47,7 +48,7 @@ namespace Xuanwu {
 
         size_t NumRunningTasks() const override { return tasks_.size(); }
 
-        void Copy(Ptr dst, Ptr src, size_t bytes) override;
+        Event Copy(Ptr dst, Ptr src, size_t bytes) override;
     };
 
     class GPUWorker : public WorkerBase {
@@ -74,7 +75,7 @@ namespace Xuanwu {
 
     private:
 
-        void RunTask(TaskPtr t) override;
+        bool RunTask(TaskPtr t) override;
 
         size_t NumRunningTasks() const override {
             return queue_.size();
@@ -84,7 +85,7 @@ namespace Xuanwu {
 
         std::vector<TaskPtr> GetCompleteTasks() override;
 
-        void Copy(Ptr dst, Ptr src, size_t bytes) override;
+        Event Copy(Ptr dst, Ptr src, size_t bytes) override;
     };
 
 }

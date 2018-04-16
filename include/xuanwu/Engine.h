@@ -48,7 +48,7 @@ namespace Xuanwu {
 
             void UnregisterTask(TaskPtr task);
 
-            DevicePtr ChooseDevice(DevicePtr device);
+            void ChooseDevice(DevicePtr device);
 
             DevicePtr DeviceChosen() const;
 
@@ -86,7 +86,7 @@ namespace Xuanwu {
             return AddTask(t);
         }
 
-        void RunTask(TaskPtr t) override;
+        bool RunTask(TaskPtr t) override;
 
         bool Tick();
 

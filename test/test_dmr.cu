@@ -68,9 +68,9 @@ void test_dmr(size_t npar, size_t num_element, int repeat) {
     LOG(INFO) << "Checking results";
 
     for (size_t par_id = 0; par_id < dmr2.Size(); par_id++) {
-        auto keys = dmr2.Keys(par_id).Read().data();
-        auto offs = dmr2.Offs(par_id).Read().data();
-        auto values = result[par_id].Read().data();
+        auto& keys = dmr2.Keys(par_id).Read();
+        auto& offs = dmr2.Offs(par_id).Read();
+        auto& values = result[par_id].Read();
 
 #pragma omp parallel for reduction(+:sum_keys_2, sum_values_2)
         for (size_t i = 0; i < dmr2.Keys(par_id).size(); i++) {
@@ -177,4 +177,50 @@ TEST(Xuanwu, LocalCreateInTask) {
     for (int i = 0 ; i < d.size(); i++) {
         ASSERT_EQ(i, d[i]);
     }
+}
+
+__global__
+void accumulate_kernel(int *arr, int* sum) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    atomicAdd(sum, arr[idx]);
+}
+
+TEST(Xuanwu, ScatterData) {
+    size_t nblocks = 50*1024/4;
+    int nthreads = 1024;
+    size_t sz = nblocks * nthreads;
+    Data<int> arr(sz);
+    arr->SetName("array");
+    auto work = [&](int val) {
+        arr.Write();
+        for (int i = 0; i < sz; i++) arr[i] = val;
+
+        int ntasks = 4;
+        std::vector<Data<int>> outs;
+        for (int i = 0; i < ntasks; i++) {
+            Data<int> sum(1);
+            sum.Write();
+            sum->SetName(std::string("out") + std::to_string(i));
+            sum[0] = 0;
+
+            auto gpu_task = std::make_unique<GPUTask>([=](GPUContext gpu) mutable {
+                accumulate_kernel << < nblocks, nthreads, 0, gpu.stream >> > (arr.data(), sum.data());
+            });
+            TaskPtr task(new TaskBase("accumulate", {}, std::move(gpu_task)));
+            task->AddInput(arr);
+            task->AddInOutput(sum);
+            Xuanwu::AddTask(task);
+            outs.emplace_back(std::move(sum));
+        }
+
+        ASSERT_EQ(ntasks, outs.size());
+        for (auto &out : outs) {
+            out.Read();
+            ASSERT_EQ(out[0], sz * val);
+        }
+    };
+
+    work(1);
+    work(2);
+
 }
