@@ -58,9 +58,7 @@ namespace Xuanwu {
             CLOG(DEBUG, "Device") << "MultipleDeviceGroup run injector With " << num_ << " " << typeid(Device).name();
             auto ret = static_cast<const MultipleDevicesGroup<OtherDevices...> *>(this)->operator()(injector, dep);
             for (int i = 0; i < num_; i++) {
-                CLOG(DEBUG, "Device") << "MyDeviceGroup creating CPUDevice " << i;
                 ret->push_back(injector.template create<std::unique_ptr<Device>>());
-                CLOG(DEBUG, "Device") << "MyDeviceGroup creating CPUDevice " << i << " OK";
             }
             return std::move(ret);
         }

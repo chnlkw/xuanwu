@@ -57,11 +57,11 @@ namespace Xuanwu {
         std::vector<cudaEvent_t> events_unused_;
 
         struct Meta {
-            cudaEvent_t beg_event, transfer_event, end_event;
+            cudaEvent_t beg_event, transfer_event, end_event, mapping_event;
             TaskPtr task;
             std::vector<::Xuanwu::TaskBase::Meta> task_metas;
-            bool timer_started = false;
-            bool started = false;
+            std::vector<DeviceArrayBase> tmp_arrs;
+            int step = 0;
         };
         std::deque<Meta> queue_;
 

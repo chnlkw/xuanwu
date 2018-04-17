@@ -9,6 +9,20 @@
 #include "clock.h"
 
 #define LG(x) CLOG(x, "Worker")
+
+namespace {
+    bool QueryEvent(cudaEvent_t e) {
+        cudaError_t err = cudaEventQuery(e);
+        if (err == cudaErrorNotReady)
+            return false;
+        if (err != cudaSuccess) {
+            LOG(ERROR) << " err = " << cudaGetErrorString(cudaGetLastError());
+            CUDA_CHECK();
+        }
+        return true;
+    }
+}
+
 namespace Xuanwu {
 
     CPUWorker::CPUWorker(CPUDevice *cpu) : WorkerBase(cpu) {}
@@ -59,13 +73,12 @@ namespace Xuanwu {
         assert(gpu);
         CUDA_CALL(cudaSetDevice, gpu->GPUID());
 
-        Meta meta{GetEvent(), GetEvent(), GetEvent(), t, t->Metas()};
+        Meta meta{GetEvent(), GetEvent(), GetEvent(), GetEvent(), t, t->Metas()};
 
         queue_.push_back(meta);
     }
 
     std::vector<TaskPtr> GPUWorker::GetCompleteTasks() {
-#ifdef USE_CUDA
         auto gpu = dynamic_cast<GPUDevice *>(device_);
         CUDA_CALL(cudaSetDevice, gpu->GPUID());
 
@@ -73,14 +86,14 @@ namespace Xuanwu {
         while (!Empty()) {
             Meta &meta = queue_.front();
             TaskPtr &t = meta.task;
-            CLOG(DEBUG, "Worker") << *this << " Query " << t << " " << *t;
-            if (!meta.timer_started) {
+            CLOG(DEBUG, "Worker") << *this << " Meta step=" << meta.step << " Query " << t << " " << *t;
+            if (meta.step == 0) {
                 CUDA_CALL(cudaEventRecord, meta.beg_event, stream_);
-                meta.timer_started = true;
+                meta.step++;
                 CLOG(DEBUG, "Worker") << *this << " timer_started " << t << " " << *t;
             }
 
-            if (!meta.started) {
+            if (meta.step == 1) {
                 CLOG(DEBUG, "Worker") << *this << " try prepare data " << t << " " << *t;
                 auto gputask = dynamic_cast<GPUTask *>(t.get());
                 if (!gputask)
@@ -118,50 +131,67 @@ namespace Xuanwu {
                     t->Run(this);
                 }
                 CUDA_CALL(cudaEventRecord, meta.end_event, stream_);
-                meta.started = true;
+                meta.step++;
             }
-
-            cudaError_t err = cudaEventQuery(meta.end_event);
-
-            if (err == cudaSuccess) {
+            if (meta.step == 2) {
+                if (!QueryEvent(meta.end_event))
+                    return ret;
 
                 float tranfer_ms, calc_ms;
                 CUDA_CALL(cudaEventElapsedTime, &tranfer_ms, meta.beg_event, meta.transfer_event);
                 CUDA_CALL(cudaEventElapsedTime, &calc_ms, meta.transfer_event, meta.end_event);
-                CLOG(INFO, "Worker") << *this << " " << *meta.task << " transfer " << tranfer_ms << " ms, " << " calc "
+                CLOG(INFO, "Worker") << *this << " " << *meta.task << " transfer " << tranfer_ms << " ms, "
+                                     << " calc "
                                      << calc_ms << " ms";
 
-                ret.push_back(meta.task);
                 events_unused_.push_back(meta.end_event);
                 events_unused_.push_back(meta.beg_event);
                 events_unused_.push_back(meta.transfer_event);
-
-                for (auto &p : meta.task->GetTempDataMappings()) {
-//                    CLOG(INFO, "Worker") << "Cleaning temp data mapping";
-                    auto &tmp_arr = p.first;
-                    auto &data = p.second;
-                    DeviceArrayBase h_arr;
-                    CUDA_CALL(cudaMemcpyAsync, &h_arr, tmp_arr.GetArrPtr(), sizeof(DeviceArrayBase), cudaMemcpyDefault,
-                              stream_);
-                    CUDA_CALL(cudaStreamSynchronize, stream_);
-                    data->Create(h_arr.bytes, device_);
-//                    printf("d.data() = %p m.ptr=%p m.bytes=%lu\n", data->data(), h_arr.ptr, h_arr.bytes);
-                    run_copy_free_kernel(data->data(), h_arr.ptr, h_arr.bytes, stream_);
-                    CUDA_CALL(cudaStreamSynchronize, stream_);
-                }
-                queue_.pop_front();
-            } else if (err == cudaErrorNotReady) {
-                return ret;
-            } else {
-                LOG(ERROR) << *this << " Run task error " << *meta.task << " err = "
-                           << cudaGetErrorString(cudaGetLastError());
-                CUDA_CHECK();
+                meta.step++;
             }
+
+            auto &mappings = meta.task->GetTempDataMappings();
+
+            if (!mappings.empty()) {
+                if (meta.step == 3) {
+                    meta.tmp_arrs.resize(mappings.size());
+                    for (size_t i = 0; i < mappings.size(); i++) {
+                        auto &tmp_arr = mappings[i].first;
+                        auto &data = mappings[i].second;
+                        meta.tmp_arrs.emplace_back();
+                        CUDA_CALL(cudaMemcpyAsync, &meta.tmp_arrs[i], tmp_arr.GetArrPtr(), sizeof(DeviceArrayBase),
+                                  cudaMemcpyDefault,
+                                  stream_);
+                    }
+                    CUDA_CALL(cudaEventRecord, meta.mapping_event, stream_);
+                    meta.step++;
+                }
+                if (meta.step == 4) {
+                    if (!QueryEvent(meta.mapping_event))
+                        return ret;
+
+                    for (size_t i = 0; i < mappings.size(); i++) {
+                        auto &tmp_arr = mappings[i].first;
+                        auto &data = mappings[i].second;
+
+                        data->Create(meta.tmp_arrs[i].bytes, device_);
+//                    printf("d.data() = %p m.ptr=%p m.bytes=%lu\n", data->data(), h_arr.ptr, h_arr.bytes);
+                        run_copy_free_kernel(data->data(), meta.tmp_arrs[i].ptr, meta.tmp_arrs[i].bytes, stream_);
+                    }
+                    CUDA_CALL(cudaEventRecord, meta.mapping_event, stream_);
+                    meta.step++;
+                }
+                if (meta.step == 5) {
+                    if (!QueryEvent(meta.mapping_event))
+                        return ret;
+                    events_unused_.push_back(meta.mapping_event);
+                    meta.step++;
+                }
+            }
+            ret.push_back(meta.task);
+            queue_.pop_front();
         }
         return ret;
-#else
-        return {};
-#endif
     }
 
     cudaEvent_t GPUWorker::GetEvent() {
@@ -180,4 +210,5 @@ namespace Xuanwu {
         assert(gpu);
         return GPUCopy(dst, src, bytes, gpu->GPUID(), stream_);
     }
+
 }
