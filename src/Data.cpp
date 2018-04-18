@@ -118,7 +118,7 @@ namespace Xuanwu {
     }
 
     bool DataImpl::ReadAsync(WorkerPtr worker, DevicePtr dev) {
-        LG(DEBUG) << "DataImpl ReadAsync " << *this << " at " << *dev;
+        LG(DEBUG) << "DataImpl ReadAsync :: Start" << *this << " at " << *dev;
         if (replicas.count(dev) == 0) {
             ArrayBasePtr arr;
             LOG_IF(replicas.empty(), FATAL) << *this << " calls ReadAsync() with no replicas";
@@ -140,6 +140,7 @@ namespace Xuanwu {
                 return false;
             }
             assert(from->second.first->GetBytes() >= bytes_);
+            LG(DEBUG) << "DataImpl ReadAsync Copy :: " << *this << " -- " << from->second.first->GetPtr() << " to " << arr->GetPtr() << " bytes=" << bytes_;
             Event event = worker->Copy(arr->GetPtr(), from->second.first->GetPtr(), bytes_);
             replicas[dev] = {arr, std::move(event)};
         }
@@ -148,15 +149,17 @@ namespace Xuanwu {
 
         current_array_ = replicas[dev].first;
         assert(current_array_->GetBytes() >= bytes_);
+        LG(DEBUG) << "DataImpl ReadAsync Finish :: " << *this << " at " << *dev;
         return replicas[dev].second->QueryFinished();
     }
 
     bool DataImpl::WriteAsync(WorkerPtr worker, DevicePtr dev) {
         assert(bytes_ > 0);
+        LG(DEBUG) << "DataImpl WriteAsync :: Start" << *this << " at " << *dev;
 //    Invalid others
         for (auto it = replicas.begin(); it != replicas.end();) {
             if (it->first != dev) {
-                invalids[dev] = it->second.first;
+                invalids[it->first] = it->second.first;
                 it = replicas.erase(it);
             } else {
                 ++it;
@@ -171,6 +174,7 @@ namespace Xuanwu {
         }
         current_array_ = replicas[dev].first;
         assert(current_array_->GetBytes() >= bytes_);
+        LG(DEBUG) << "DataImpl WriteAsync :: Finish" << *this << " at " << *dev;
         return true;
     }
 
@@ -218,6 +222,7 @@ namespace Xuanwu {
         replicas[dev] = {arr, std::make_unique<EventDummy>()};
 //        replicas[device] = arr;
         current_array_ = arr;
+        LG(DEBUG) << "DataImpl Create : " << *this << " " << *dev << " bytes=" << bytes;
     }
 
     ArrayBasePtr DataImpl::CurrentArray() const {
