@@ -47,6 +47,10 @@ namespace Xuanwu {
                 keys_.push_back(dmr3_[i].Keys());
                 offs_.push_back(dmr3_[i].Offs());
             }
+            for (size_t i = 0; i < size_; i++) {
+                dmr1_[i].name = std::string("shuffle1.") + std::to_string(i);
+                dmr3_[i].name = std::string("shuffle3.") + std::to_string(i);
+            }
         }
 
         void Prepare(const std::vector<std::vector<TKey>> &mapper_keys) {

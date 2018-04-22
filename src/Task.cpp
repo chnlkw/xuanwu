@@ -17,6 +17,8 @@ namespace Xuanwu {
 
     TaskBase::TaskBase(std::string name, std::unique_ptr<CPUTask> cputask, std::unique_ptr<GPUTask> gputask) :
             name_(std::move(name)), cputask_(std::move(cputask)), gputask_(std::move(gputask)) {
+        static int g_seq = 0;
+        seq = g_seq++;
     }
 
     TaskBase::TaskBase(std::string name) :

@@ -11,14 +11,19 @@ namespace Xuanwu {
     void DataBase::log(el::base::type::ostream_t &os) const {
         os << "Data[" << Name() << "]";
     }
+
     void DataImpl::log(el::base::type::ostream_t &os) const {
         os << "Data[#" << GetUID() << ":" << Name() << "]";
-        os <<"(r:"; for (auto& r : replicas) os <<" " << *r.first << " " << r.second.first->data(); os << ")";
-        os <<"(i:"; for (auto& i : invalids) os <<" " << *i.first << " " << i.second->data(); os << ")";
+        os << " (r:";
+        for (auto &r : replicas) os << " " << *r.first << " " << r.second.first->data();
+        os << ")";
+        os << "(i:";
+        for (auto &i : invalids) os << " " << *i.first << " " << i.second->data();
+        os << ")";
     }
 
     void TaskBase::log(el::base::type::ostream_t &os) const {
-        os << "Task[" << Name() << "]";
+        os << "Task[" << seq << "_" << Name() << "]";
         if (finished) os << " Finished";
     }
 

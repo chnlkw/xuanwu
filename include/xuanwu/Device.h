@@ -30,7 +30,7 @@ namespace Xuanwu {
         }
 
     public:
-        using NumWorkers = Strong<unsigned, 2>;
+        using NumWorkers = Strong<int, 2>;
         using HeapLimit = Strong<size_t, 100LU<<20>;
         GPUDevice(NumWorkers, HeapLimit);
 

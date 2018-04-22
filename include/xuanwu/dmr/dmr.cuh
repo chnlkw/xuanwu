@@ -21,13 +21,13 @@ namespace Xuanwu {
     };
 
     template<class T, class TOff>
-    void ShuffleByIdx(Data <T> dst, Data <T> src, Data <TOff> idx) {
+    void ShuffleByIdx(Data <T> dst, Data <T> src, Data <TOff> idx, std::string name) {
 //    LG(INFO) << dst.size() << " ?= " << src.size() << " ?= " << idx.size();
         assert(dst.size() == src.size());
         assert(dst.size() == idx.size());
 
         TaskPtr task(new TaskBase(
-                "Shuffle",
+                name,
                 std::make_unique<CPUTask>([=](CPUContext cpu)mutable {
                     for (int i = 0; i < dst.size(); i++) {
                         dst[i] = src[idx[i]];

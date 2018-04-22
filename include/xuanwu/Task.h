@@ -54,6 +54,7 @@ namespace Xuanwu {
         friend class Engine;
 
         std::string name_;
+        int seq;
 
         std::unique_ptr<CPUTask> cputask_;
         std::unique_ptr<GPUTask> gputask_;

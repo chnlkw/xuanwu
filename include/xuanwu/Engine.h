@@ -29,14 +29,20 @@ namespace Xuanwu {
 
         size_t num_running_tasks_ = 0;
 
+        enum class Flag {
+            Read = 1,
+            Write = 2,
+            ReadWrite = 3
+        };
+
         class DataStep {
             struct Step {
-                bool is_write = false;
+                Flag flag;
                 std::set<TaskPtr> tasks;
 
                 DevicePtr device_chosen_ = nullptr;
 
-                Step(bool writable) : is_write(writable) {}
+                Step(Flag f) : flag(f) {}
             };
 
             std::deque<Step> steps_;
@@ -44,7 +50,7 @@ namespace Xuanwu {
 
             DataStep() = default;
 
-            std::vector<TaskPtr> RegisterTask(TaskPtr task, bool writable);
+            std::vector<TaskPtr> RegisterTask(TaskPtr task, Flag flag);
 
             void UnregisterTask(TaskPtr task);
 

@@ -21,10 +21,10 @@
 
 namespace Xuanwu {
     template<class VData, class VOff>
-    void ShuffleByIdx(VData &p_dst, const VData &p_src, const VOff &p_idx);
+    void ShuffleByIdx(VData &p_dst, const VData &p_src, const VOff &p_idx, std::string);
 
     template<class T, class TOff>
-    void ShuffleByIdx(std::vector<T> &p_dst, const std::vector<T> &p_src, const std::vector<TOff> &p_idx) {
+    void ShuffleByIdx(std::vector<T> &p_dst, const std::vector<T> &p_src, const std::vector<TOff> &p_idx, std::string) {
         size_t size = p_dst.size();
         assert(size == p_src.size());
         assert(size == p_idx.size());
@@ -49,6 +49,8 @@ namespace Xuanwu {
         Vector<TOff> gather_indices_;
 
     public:
+        std::string name = "dmr";
+
         DMR() {}
 
         DMR(const std::vector<TKey> &keys) {
@@ -98,7 +100,8 @@ namespace Xuanwu {
                 size_(that.Size()),
                 reducer_keys_(that.Keys()),
                 reducer_offs_(that.Offs()),
-                gather_indices_(that.GatherIndices()) {
+                gather_indices_(that.GatherIndices()),
+                name(that.name) {
         }
 
         size_t Size() const {
@@ -120,7 +123,7 @@ namespace Xuanwu {
         template<class TValue>
         Vector<TValue> ShuffleValues(const Vector<TValue> &value_in) const {
             Vector<TValue> value_out(value_in.size());
-            ShuffleByIdx(value_out, value_in, gather_indices_);
+            ShuffleByIdx(value_out, value_in, gather_indices_, name);
             return std::move(value_out);
         }
 
