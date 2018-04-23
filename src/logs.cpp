@@ -14,6 +14,7 @@ namespace Xuanwu {
 
     void DataImpl::log(el::base::type::ostream_t &os) const {
         os << "Data[#" << GetUID() << ":" << Name() << "]";
+        os << " size=" << this->Bytes();
         os << " (r:";
         for (auto &r : replicas) os << " " << *r.first << " " << r.second.first->data();
         os << ")";

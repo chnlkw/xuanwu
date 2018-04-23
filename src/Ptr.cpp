@@ -24,27 +24,30 @@ namespace Xuanwu {
     }
 
     Event GPUCopy(Ptr dst, Ptr src, size_t bytes, int gpu_id, cudaStream_t stream) {
-        CLOG(INFO, "DataCopy") << "GPUCopy " << src << " to " << dst << " stream = " << stream;
+        CLOG(INFO, "DataCopy") << "GPUCopy " << src << " to " << dst << " stream = " << stream << " bytes = " << bytes;
         CUDA_CALL(cudaSetDevice, gpu_id);
         CUDA_CALL(cudaMemcpyAsync, dst, src, bytes, cudaMemcpyDefault, stream);
         return Event(new EventGPU(stream));
     }
 
     Event CPUCopy(Ptr dst, Ptr src, size_t bytes) {
-        CLOG(INFO, "DataCopy") << "CPUCopy " << src << " to " << dst;
+        CLOG(INFO, "DataCopy") << "CPUCopy " << src << " to " << dst << " bytes = " << bytes;
         if (dst.isCPU() && src.isCPU()) {
             memcpy(dst, src, bytes);
             return std::make_unique<EventDummy>();
         } else if (dst.isGPU() || src.isGPU()) {
             CUDA_CALL(cudaMemcpy, dst, src, bytes, cudaMemcpyDefault);
             return std::make_unique<EventGPU>((cudaStream_t)0);
+        } else {
+            LOG(FATAL) << "CPUCopy " << src << " to " << dst << " not supported";
+            abort();
         }
     }
 
     int CopySpeed(Ptr dst, Ptr src) {
         if (dst.isCPU() && src.isCPU()) {
             return 50;
-        } else if (dst.isGPU() || src.isGPU()) {
+        } else if (dst.isGPU() && src.isGPU()) {
             return 100;
         } else if (dst.isCPU() && src.isGPU() || dst.isGPU() && src.isCPU()) {
             return 10;

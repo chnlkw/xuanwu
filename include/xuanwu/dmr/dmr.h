@@ -17,6 +17,14 @@
 #include "xuanwu/Worker.h"
 #include "xuanwu/Xuanwu.h"
 
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#include <thrust/copy.h>
+#include <thrust/fill.h>
+#include <thrust/sequence.h>
+#include <thrust/unique.h>
+
+
 #define LG(x) CLOG(x, "DMR")
 
 namespace Xuanwu {
@@ -64,35 +72,53 @@ namespace Xuanwu {
         void Prepare(const std::vector<TKey> &keys) {
             size_ = keys.size();
 
-            std::vector<std::pair<TKey, TOff>> metas(Size());
-            for (size_t i = 0; i < Size(); i++) {
-                metas[i] = {keys[i], i};
-            }
+            thrust::host_vector<TKey> h_keys = keys;
+            thrust::device_vector<TKey> d_keys = h_keys;
+            thrust::device_vector<TOff> d_gather_indices(Size());
+            thrust::device_vector<TOff> d_off(Size());
 
-            std::sort(metas.begin(), metas.end());
+            thrust::sequence(d_gather_indices.begin(), d_gather_indices.end());
+            thrust::sort_by_key(d_keys.begin(), d_keys.end(), d_gather_indices.begin());
 
-            std::vector<TOff> gather_indices(Size());
-            std::vector<TKey> reducer_keys;
-            std::vector<TOff> reducer_offs;
+            thrust::sequence(d_off.begin(), d_off.end());
+            auto new_end = thrust::unique_by_key(d_keys.begin(), d_keys.end(), d_off.begin());
+            auto off_size = new_end.first - d_keys.begin();
+            d_keys.resize(off_size);
+            d_off.resize(off_size);
+            d_off.push_back(Size());
 
-            gather_indices.resize(Size());
+            h_keys = d_keys;
+            thrust::host_vector<TOff> h_off = d_off;
+            thrust::host_vector<TOff> h_gather_indices = d_gather_indices;
+//            std::vector<std::pair<TKey, TOff>> metas(Size());
+//            for (size_t i = 0; i < Size(); i++) {
+//                metas[i] = {keys[i], i};
+//            }
+//
+//            std::sort(metas.begin(), metas.end());
 
-            for (size_t i = 0; i < metas.size(); i++) {
-                TKey k = metas[i].first;
-                gather_indices[i] = metas[i].second;
+//            std::vector<TOff> gather_indices(Size());
+//            std::vector<TKey> reducer_keys;
+//            std::vector<TOff> reducer_offs;
+//
+//            gather_indices.resize(Size());
 
-                if (i == 0 || metas[i].first != metas[i - 1].first) {
-                    reducer_keys.push_back(k);
-                    reducer_offs.push_back(i);
-                }
-            }
-            reducer_offs.push_back(Size());
-            reducer_keys.shrink_to_fit();
-            reducer_offs.shrink_to_fit();
+//            for (size_t i = 0; i < metas.size(); i++) {
+//                TKey k = metas[i].first;
+//                gather_indices[i] = metas[i].second;
+//
+//                if (i == 0 || metas[i].first != metas[i - 1].first) {
+//                    reducer_keys.push_back(k);
+//                    reducer_offs.push_back(i);
+//                }
+//            }
+//            reducer_offs.push_back(Size());
+//            reducer_keys.shrink_to_fit();
+//            reducer_offs.shrink_to_fit();
 
-            reducer_keys_ = Vector<TKey>(std::move(reducer_keys));
-            reducer_offs_ = Vector<TOff>(std::move(reducer_offs));
-            gather_indices_ = Vector<TOff>(std::move(gather_indices));
+            reducer_keys_ = Vector<TKey>({h_keys.begin(), h_keys.end()});
+            reducer_offs_ = Vector<TOff>({h_off.begin(), h_off.end()});
+            gather_indices_ = Vector<TOff>({h_gather_indices.begin(), h_gather_indices.end()});
         }
 
         template<class Cons>

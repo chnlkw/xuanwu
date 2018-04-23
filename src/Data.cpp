@@ -133,8 +133,11 @@ namespace Xuanwu {
             int max_copy_speed = 0;
             for (auto it = replicas.begin(); it != replicas.end(); ++it) {
 //            for (auto &r : replicas) {
-                if (max_copy_speed < CopySpeed(arr->GetPtr(), it->second.first->GetPtr()))
+                int copy_speed = CopySpeed(arr->GetPtr(), it->second.first->GetPtr());
+                if (max_copy_speed < copy_speed) {
+                    max_copy_speed = copy_speed;
                     from = it;
+                }
             }
             if (!from->second.second->QueryFinished()) {
                 return false;

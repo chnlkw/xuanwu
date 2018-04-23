@@ -47,21 +47,29 @@ bool cudaEnsureSuccess(cudaError_t status, const char *status_context_descriptio
 
 template <class T>
 __global__
-void copy_free_kernel(T* dst, T* src, size_t cnt) {
-    for (int i = threadIdx.x; i <cnt; i += blockDim.x)
+void copy_kernel(T* dst, T* src, size_t N) {
+    for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < N; i += blockDim.x * gridDim.x)
+//    for (int i = threadIdx.x; i <cnt; i += blockDim.x)
         dst[i] = src[i];
 //        memcpy(dst, src, bytes);
     __syncthreads();
-    if (threadIdx.x == 0)
+}
+
+__global__
+void free_kernel(void* src) {
+    if (blockIdx.x == 0 && threadIdx.x == 0)
         free(src);
 }
 
 void run_copy_free_kernel(void* dst, void* src, size_t bytes, cudaStream_t stream) {
     if (bytes % sizeof(int) == 0) {
-        copy_free_kernel<int> << < 1, 1024, 0, stream >> > ((int*)dst, (int*)src, bytes / sizeof(int));
+        size_t N = bytes / sizeof(int);
+        copy_kernel<int> << < (N+1023)/1024, 1024, 0, stream >> > ((int*)dst, (int*)src, bytes / sizeof(int));
     } else {
-        copy_free_kernel<char> << < 1, 1024, 0, stream >> > ((char*)dst, (char*)src, bytes);
+        copy_kernel<char> << < (bytes+1023)/1024, 1024, 0, stream >> > ((char*)dst, (char*)src, bytes);
     }
+    free_kernel<<<1, 1, 0, stream>>>(src);
+    CUDA_CHECK();
 }
 
 
