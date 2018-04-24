@@ -83,4 +83,7 @@ namespace Xuanwu {
         return arr;
     }
 
+    void CPUContext::Copy(Ptr dst, Ptr src, size_t bytes) {
+        worker->Copy(dst, src, bytes);
+    }
 }

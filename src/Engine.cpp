@@ -65,6 +65,7 @@ namespace Xuanwu {
             return false;
         }
 
+        std::sort(ready_tasks_.begin(), ready_tasks_.end(), [](auto &a, auto &b) { return a->Seq() < b->Seq(); });
         for (auto it = ready_tasks_.begin(); it != ready_tasks_.end();) {
             RunTask(*it);
             it = ready_tasks_.erase(it);
@@ -77,15 +78,18 @@ namespace Xuanwu {
         LG(DEBUG) << " Choose Device of " << *t;
         std::map<DevicePtr, float> dev_score;
         for (auto &dev : devices_) {
+            float score_overhead = 0;
             for (auto &m : t->Metas()) {
                 if (m.readable)
-                    dev_score[dev.get()] += 1.0 / (1 + m.data->ReadOverhead(dev.get()));
+                    score_overhead += 1.0 / (1 + m.data->ReadOverhead(dev.get()));
                 else
-                    dev_score[dev.get()] += 1.0 / (1 + m.data->WriteOverhead(dev.get()));
+                    score_overhead += 1.0 / (1 + m.data->WriteOverhead(dev.get()));
             }
-            dev_score[dev.get()] += 10 / (1 + dev->NumRunningTasks());
-            dev_score[dev.get()] += 1000 * dev->ScoreRunTask(t);
-            LG(DEBUG) << *dev << " has score " << dev_score[dev.get()];
+            float score_overload = 10.0f / (1 + dev->NumRunningTasks());
+            float score_dev_run_task = 1000 * dev->ScoreRunTask(t);
+            dev_score[dev.get()] = score_overhead + score_overload + score_dev_run_task;
+            LG(DEBUG) << *dev << " has score " << dev_score[dev.get()] <<
+                      "=" << score_overhead << "+" << score_overload << "+" << score_dev_run_task;
 //            LG(DEBUG) << *t << "is runnable on " << *dev;
         }
         assert(!dev_score.empty());

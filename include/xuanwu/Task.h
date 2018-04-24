@@ -64,6 +64,8 @@ namespace Xuanwu {
 
         TaskBase(const TaskBase &) = delete;
 
+        int Seq() const { return seq; }
+
         const auto &Metas() {
 //            std::sort(metas_.begin(), metas_.end());
             return metas_;
@@ -116,12 +118,11 @@ namespace Xuanwu {
 
     struct CPUContext : Context {
         CPUDevice *dev;
+        CPUWorker *worker;
 
-        CPUContext(CPUDevice *dev) : dev(dev) {}
+        CPUContext(CPUDevice *dev, CPUWorker* worker) : dev(dev), worker(worker) {}
 
-        void Copy(Ptr dst, Ptr src, size_t bytes) override {
-            CPUCopy(dst, src, bytes);
-        }
+        void Copy(Ptr dst, Ptr src, size_t bytes) override;
     };
 
     struct DeviceArrayBase {

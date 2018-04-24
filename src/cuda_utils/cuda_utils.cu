@@ -61,15 +61,18 @@ void free_kernel(void* src) {
         free(src);
 }
 
-void run_copy_free_kernel(void* dst, void* src, size_t bytes, cudaStream_t stream) {
+void run_copy_kernel(void* dst, void* src, size_t bytes, cudaStream_t stream) {
     if (bytes % sizeof(int) == 0) {
         size_t N = bytes / sizeof(int);
-        copy_kernel<int> << < (N+1023)/1024, 1024, 0, stream >> > ((int*)dst, (int*)src, bytes / sizeof(int));
+        copy_kernel<int> << < (N + 1023) / 1024, 1024, 0, stream >> > ((int *) dst, (int *) src, bytes / sizeof(int));
     } else {
-        copy_kernel<char> << < (bytes+1023)/1024, 1024, 0, stream >> > ((char*)dst, (char*)src, bytes);
+        copy_kernel<char> << < (bytes + 1023) / 1024, 1024, 0, stream >> > ((char *) dst, (char *) src, bytes);
     }
+}
+
+void run_copy_free_kernel(void* dst, void* src, size_t bytes, cudaStream_t stream) {
+    run_copy_kernel(dst, src, bytes, stream);
     free_kernel<<<1, 1, 0, stream>>>(src);
-    CUDA_CHECK();
 }
 
 

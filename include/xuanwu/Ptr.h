@@ -43,7 +43,7 @@ namespace Xuanwu {
         Type type_;
     };
 
-    Event CPUCopy(Ptr dst, Ptr src, size_t bytes);
+    Event CPUCopy(Ptr dst, Ptr src, size_t bytes, cudaStream_t stream);
 
     Event GPUCopy(Ptr dst, Ptr src, size_t bytes, int gpu_id, cudaStream_t stream);
 

@@ -25,7 +25,9 @@ namespace {
 
 namespace Xuanwu {
 
-    CPUWorker::CPUWorker(CPUDevice *cpu) : WorkerBase(cpu) {}
+    CPUWorker::CPUWorker(CPUDevice *cpu) : WorkerBase(cpu) {
+        CUDA_CALL(cudaStreamCreate, &stream_);
+    }
 
     std::vector<TaskPtr> CPUWorker::GetCompleteTasks() {
         auto cpu = dynamic_cast<CPUDevice *>(device_);
@@ -47,7 +49,7 @@ namespace Xuanwu {
                     }
                     CLOG(DEBUG, "Worker") << m;
                 }
-                (*cputask)(CPUContext(cpu));
+                (*cputask)(CPUContext(cpu, this));
             } else
                 t->Run(this);
             CLOG(INFO, "Worker") << *this << " " << *t << " uses " << clk.timeElapsed() << " seconds";
@@ -58,7 +60,7 @@ namespace Xuanwu {
     }
 
     Event CPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
-        return CPUCopy(dst, src, bytes);
+        return CPUCopy(dst, src, bytes, stream_);
     }
 
     GPUWorker::GPUWorker(GPUDevice *gpu) :

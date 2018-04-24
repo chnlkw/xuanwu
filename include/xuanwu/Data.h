@@ -112,7 +112,7 @@ namespace Xuanwu {
                 std::shared_ptr<DataBase>(mm->MakeData<T>(vec.size())) {
             Write();
             size_t bytes = vec.size() * sizeof(T);
-            CPUCopy(CurrentArray().GetPtr(), Ptr((void *) vec.data()), bytes);
+            CPUCopy(CurrentArray().GetPtr(), Ptr((void *) vec.data()), bytes, 0);
         }
 
         using value_type = T;

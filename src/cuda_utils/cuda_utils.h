@@ -33,6 +33,8 @@ bool cudaEnsureSuccess(cudaError_t status, const char *status_context_descriptio
                        bool die_on_error, const char *filename, unsigned line_number);
 
 
+void run_copy_kernel(void* dst, void* src, size_t bytes, cudaStream_t stream);
+
 void run_copy_free_kernel(void* dst, void* src, size_t bytes, cudaStream_t stream);
 
 #else

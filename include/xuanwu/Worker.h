@@ -34,6 +34,7 @@ namespace Xuanwu {
 
 
     class CPUWorker : public WorkerBase {
+        cudaStream_t stream_;
         std::deque<TaskPtr> tasks_;
     public:
         explicit CPUWorker(CPUDevice *cpu);
