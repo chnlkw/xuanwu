@@ -11,6 +11,8 @@
 #include "Ptr.h"
 #include "Task.h"
 #include <deque>
+#include <condition_variable>
+#include <thread>
 
 namespace Xuanwu {
     class WorkerBase : public el::Loggable, public Runnable {
@@ -34,14 +36,21 @@ namespace Xuanwu {
 
 
     class CPUWorker : public WorkerBase {
+        bool finished_ = false;
         cudaStream_t stream_;
         std::deque<TaskPtr> tasks_;
+        std::vector<TaskPtr> running_tasks_, finished_tasks_;
+        std::mutex m_;
+        std::condition_variable cv_;
+        std::thread worker_thread_;
+
+        void start_worker();
     public:
         explicit CPUWorker(CPUDevice *cpu);
 
-        void RunTask(TaskPtr t) override {
-            tasks_.push_back(t);
-        }
+        ~CPUWorker();
+
+        void RunTask(TaskPtr t) override;
 
         bool Empty() const override { return tasks_.empty(); }
 

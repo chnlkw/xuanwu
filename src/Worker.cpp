@@ -25,42 +25,110 @@ namespace {
 
 namespace Xuanwu {
 
-    CPUWorker::CPUWorker(CPUDevice *cpu) : WorkerBase(cpu) {
+    void CPUWorker::RunTask(TaskPtr t) {
+//        {
+//            std::unique_lock<std::mutex> lk(m_);
+        tasks_.push_back(t);
+//        }
+//        cv_.notify_one();
+    }
+
+    CPUWorker::CPUWorker(CPUDevice *cpu) :
+            WorkerBase(cpu),
+            worker_thread_([this]() { start_worker(); }) {
         CUDA_CALL(cudaStreamCreate, &stream_);
     }
 
     std::vector<TaskPtr> CPUWorker::GetCompleteTasks() {
-        auto cpu = dynamic_cast<CPUDevice *>(device_);
-        assert(cpu);
-        std::vector<TaskPtr> ret;
-        for (TaskPtr t : tasks_) {
-            CPUTask *cputask = dynamic_cast<CPUTask *>(t.get());
+
+        auto prepare = [&](TaskPtr t) -> bool {
+            auto cputask = dynamic_cast<CPUTask *>(t.get());
             if (!cputask)
                 cputask = t->GetCPUTask();
-            CLOG(INFO, "Worker") << *this << " Run " << *t;
-            Clock clk;
             if (cputask) {
                 for (auto &m : t->Metas()) {
                     if (m.readable) {
-                        while (!m.data->ReadAsync(this, device_));
+                        if (!m.data->ReadAsync(this, device_))
+                            return false;
+
                     }
                     if (m.writable && m.data->Bytes() > 0) {
-                        while (!m.data->WriteAsync(this, device_));
+                        if (!m.data->WriteAsync(this, device_))
+                            return false;
                     }
-                    CLOG(DEBUG, "Worker") << m;
+                    CLOG(DEBUG, "CPUWorker prepare OK ") << m;
                 }
-                (*cputask)(CPUContext(cpu, this));
+                {
+                    std::unique_lock<std::mutex> lk(m_);
+                    running_tasks_.push_back(t);
+                }
+                cv_.notify_one();
             } else
                 t->Run(this);
-            CLOG(INFO, "Worker") << *this << " " << *t << " uses " << clk.timeElapsed() << " seconds";
-            ret.push_back(t);
+            return true;
+        };
+
+        for (auto it = tasks_.begin(); it != tasks_.end();) {
+            if (prepare(*it)) {
+                it = tasks_.erase(it);
+            } else {
+                ++it;
+            }
         }
-        tasks_.clear();
+
+        std::unique_lock<std::mutex> lk(m_);
+        std::vector<TaskPtr> ret = std::move(finished_tasks_);
+        finished_tasks_.clear();
         return ret;
     }
 
     Event CPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
         return CPUCopy(dst, src, bytes, stream_);
+    }
+
+    void CPUWorker::start_worker() {
+        auto cpu = dynamic_cast<CPUDevice *>(device_);
+        assert(cpu);
+
+        std::unique_lock<std::mutex> lk(m_);
+        while (true) {
+            cv_.wait(lk, [this] { return finished_ || !running_tasks_.empty(); });
+            if (finished_)
+                return;
+            auto tasks = std::move(running_tasks_);
+            running_tasks_.clear();
+            lk.unlock();
+
+            for (TaskPtr t : tasks) {
+                Clock clk;
+
+                CLOG(INFO, "Worker") << *this << " Run " << t << " " << *t;
+
+                auto cputask = dynamic_cast<CPUTask *>(t.get());
+                if (!cputask)
+                    cputask = t->GetCPUTask();
+                assert(cputask);
+
+                (*cputask)(CPUContext(cpu, this));
+
+                CLOG(INFO, "Worker") << *this << " " << *t << " uses "
+                                     << clk.timeElapsed() << " seconds";
+            }
+
+            lk.lock();
+            for (TaskPtr t : tasks) {
+                finished_tasks_.push_back(t);
+            }
+        }
+    }
+
+    CPUWorker::~CPUWorker() {
+        {
+            std::unique_lock<std::mutex> lk(m_);
+            finished_ = true;
+        }
+        cv_.notify_all();
+        worker_thread_.join();
     }
 
     GPUWorker::GPUWorker(GPUDevice *gpu) :
