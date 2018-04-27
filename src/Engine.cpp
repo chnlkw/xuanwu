@@ -121,8 +121,10 @@ namespace Xuanwu {
     }
 
     void Engine::CheckTaskReady(TaskPtr task) {
-        if (tasks_[task].in_degree == 0)
+        if (tasks_[task].in_degree == 0) {
             ready_tasks_.push_back(task);
+            LG(INFO) << *task << " is ready";
+        }
     }
 
     void Engine::FinishTask(TaskPtr task) {

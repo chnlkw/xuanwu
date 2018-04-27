@@ -102,7 +102,7 @@ namespace Xuanwu {
             for (TaskPtr t : tasks) {
                 Clock clk;
 
-                CLOG(INFO, "Worker") << *this << " Run " << t << " " << *t;
+                CLOG(INFO, "Worker") << *this << " Run " << *t;
 
                 auto cputask = dynamic_cast<CPUTask *>(t.get());
                 if (!cputask)
@@ -194,11 +194,11 @@ namespace Xuanwu {
                         }
                         CLOG(DEBUG, "Worker") << "s22 " << m;
                     }
-                    CLOG(INFO, "Worker") << *this << " Run " << t << " " << *t;
+                    CLOG(INFO, "Worker") << *this << " Run " << *t;
                     CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
                     (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, this, t));
                 } else {
-                    CLOG(ERROR, "Worker") << *this << " RunOld " << t << " " << *t;
+                    CLOG(ERROR, "Worker") << *this << " RunOld " << *t;
                     CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
                     t->Run(this);
                 }
