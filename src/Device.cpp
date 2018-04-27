@@ -18,6 +18,7 @@ namespace Xuanwu {
         }
         CUDA_CALL(cudaSetDevice, gpu_id_);
         CUDA_CALL(cudaDeviceSetLimit, cudaLimitMallocHeapSize, heap_limit);
+        CUDA_CALL(cudaGetDeviceProperties, &deviceProp, gpu_id_);
     }
 
     std::vector<TaskPtr> DeviceBase::GetCompleteTasks() {

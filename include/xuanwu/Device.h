@@ -23,6 +23,7 @@ namespace Xuanwu {
 
     class GPUDevice : public DeviceBase {
         int gpu_id_;
+        cudaDeviceProp deviceProp;
 
         static int GetGPUId() {
             static int id = 0;
@@ -40,6 +41,10 @@ namespace Xuanwu {
 
         int GPUID() const {
             return gpu_id_;
+        }
+
+        size_t MaxSharedMemorySize() const {
+            return deviceProp.sharedMemPerBlock;
         }
 
         void log(el::base::type::ostream_t &os) const override;

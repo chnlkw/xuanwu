@@ -139,6 +139,8 @@ namespace Xuanwu {
     }
 
     void GPUWorker::RunTask(TaskPtr t) {
+        CLOG(INFO, "Worker") << *this << " Run " << *t;
+
         auto gpu = dynamic_cast<GPUDevice *>(device_);
         assert(gpu);
         CUDA_CALL(cudaSetDevice, gpu->GPUID());
@@ -194,7 +196,7 @@ namespace Xuanwu {
                         }
                         CLOG(DEBUG, "Worker") << "s22 " << m;
                     }
-                    CLOG(INFO, "Worker") << *this << " Run " << *t;
+                    CLOG(INFO, "Worker") << *this << " prepared ok " << *t;
                     CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
                     (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, this, t));
                 } else {

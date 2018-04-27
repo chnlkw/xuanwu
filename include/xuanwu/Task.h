@@ -219,6 +219,7 @@ namespace Xuanwu {
         void Copy(Ptr dst, Ptr src, size_t bytes) override {
             GPUCopy(dst, src, bytes, dev->GPUID(), stream);
         }
+
     };
 
     struct GPUTask : public std::function<void(GPUContext)> {

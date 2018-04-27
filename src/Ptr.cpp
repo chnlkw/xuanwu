@@ -27,7 +27,8 @@ namespace Xuanwu {
         CLOG(INFO, "DataCopy") << "GPUCopy " << src << " to " << dst << " stream = " << stream << " bytes = " << bytes;
         CUDA_CALL(cudaSetDevice, gpu_id);
         if (dst.isGPU() && src.isGPU()) {
-            run_copy_kernel(dst, src, bytes, stream);
+            CUDA_CALL(cudaMemcpyAsync, dst, src, bytes, cudaMemcpyDefault, stream);
+//            run_copy_kernel(dst, src, bytes, stream);
         } else {
             CUDA_CALL(cudaMemcpyAsync, dst, src, bytes, cudaMemcpyDefault, stream);
         }
