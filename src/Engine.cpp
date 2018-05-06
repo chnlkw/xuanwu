@@ -98,12 +98,21 @@ namespace Xuanwu {
                 if (auto dev = data_steps_[m.data->GetUID()].DeviceChosen()) {
                     LG(DEBUG) << *dev << " has been chosen by data " << m.data;
                     for (auto it = dev_score.begin(); it != dev_score.end();) {
-                        if (it->first != dev) {
+                        if (it->first != dev ) {
                             LG(DEBUG) << *it->first << " has been erased by data " << m.data;
                             it = dev_score.erase(it);
                         } else
                             ++it;
                     }
+                }
+            }
+            if (m.data->device_pinned_) {
+                for (auto it = dev_score.begin(); it != dev_score.end();) {
+                    if (it->first != m.data->device_pinned_) {
+                        LG(DEBUG) << *it->first << " has been erased because pinned " << m.data;
+                        it = dev_score.erase(it);
+                    } else
+                        ++it;
                 }
             }
         }

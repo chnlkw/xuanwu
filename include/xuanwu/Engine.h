@@ -62,21 +62,9 @@ namespace Xuanwu {
 
         std::unordered_map<size_t, DataStep> data_steps_;
 
-    private:
-
-//    static std::shared_ptr<Engine> engine;
-
     public:
 
         Engine(std::unique_ptr<MyDeviceGroup> g);
-
-//    static void Set(std::shared_ptr<Engine> e) { engine = e; }
-
-//    static Engine &Get();
-
-//    static DevicePtr GetDefaultDevice();
-
-//    static void Finish() { engine.reset(); }
 
         size_t NumRunningTasks() const override {
             return num_running_tasks_;

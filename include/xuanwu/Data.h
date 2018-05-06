@@ -32,6 +32,8 @@ namespace Xuanwu {
 
         size_t uid;
 
+        DevicePtr device_pinned_ = nullptr;
+
     public:
         virtual ~DataBase() = default;
 
@@ -88,6 +90,8 @@ namespace Xuanwu {
         void log(el::base::type::ostream_t &os) const override;
 
         std::string Name() const { return name_; }
+
+        void PinnedToDevice(DevicePtr dev);
     };
 
     template<class T>

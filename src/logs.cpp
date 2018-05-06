@@ -10,6 +10,8 @@
 namespace Xuanwu {
     void DataBase::log(el::base::type::ostream_t &os) const {
         os << "Data[" << Name() << "]";
+        if (device_pinned_)
+            os << "Pin[" << *device_pinned_ << "]";
     }
 
     void DataImpl::log(el::base::type::ostream_t &os) const {

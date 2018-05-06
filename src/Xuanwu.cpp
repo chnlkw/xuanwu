@@ -37,13 +37,14 @@ namespace Xuanwu {
         return device.get();
     }
 
-    Xuanwu::Xuanwu(std::shared_ptr<MMBase> mm, std::unique_ptr<Engine> e) :
+    Xuanwu::Xuanwu(std::shared_ptr<MMBase> mm, std::unique_ptr<Engine> engine) :
             mm(std::move(mm)),
-            e(std::move(e)) {
+            e(std::move(engine)) {
         allocator.reset(new CPUAllocator());
         device = std::make_unique<CPUDevice>();
         worker = std::make_unique<CPUWorker>((CPUDevice *) device.get());
         xw = this;
+        all_devices_ = e->GetDevices();
     }
 
     DevicePtr GetDefaultDevice() {

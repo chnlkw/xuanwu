@@ -30,6 +30,7 @@ namespace Xuanwu {
     TaskBase &AddTask(TaskPtr task);
 
     class Xuanwu {
+        std::vector<std::shared_ptr<DeviceBase>> all_devices_;
         std::unique_ptr<DeviceBase> device;
         std::unique_ptr<WorkerBase> worker;
         std::shared_ptr<AllocatorBase> allocator;
@@ -51,8 +52,27 @@ namespace Xuanwu {
 
         static Xuanwu* GetXuanwu();
 
+        template<class Dev>
+        Dev *GetDevice(int order) {
+            std::vector<Dev*> devs;
+            for (auto & dev : all_devices_) {
+                Dev* d = dynamic_cast<Dev*>(dev.get());
+                if (d) {
+                    devs.push_back(d);
+                }
+            }
+            if (devs.size())
+                return devs[order % devs.size()];
+            else
+                return nullptr;
+        }
+
     };
 
+    template<class Dev>
+    Dev *GetDevice(int order) {
+        return Xuanwu::GetXuanwu()->GetDevice<Dev>(order);
+    }
 }
 
 #endif //XUANWU_XUANWU_H

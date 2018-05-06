@@ -103,6 +103,10 @@ namespace Xuanwu {
         return WriteAsync(worker, worker->Device());
     }
 
+    void DataBase::PinnedToDevice(DevicePtr dev) {
+        device_pinned_ = dev;
+    }
+
     DataImpl::DataImpl(MMBase *mm, size_t size) : DataBase(mm, size) {}
 
     void DataImpl::ResizeBytes(size_t bytes) {
