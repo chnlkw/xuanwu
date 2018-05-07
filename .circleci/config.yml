@@ -1,11 +1,21 @@
 version: 2
+
+apt-run: &apt-install
+  name: Install apt packages
+  command: |
+    sudo apt update
+    sudo apt install -y cmake
+
 jobs:
   build:
     docker:
       - image: nvidia/cuda:9.1-devel-ubuntu16.04
 
     steps:
+
+
       - checkout
+
 
       - run:
           name: CMake Build
