@@ -129,24 +129,24 @@ namespace Xuanwu {
             get()->clear();
         }
 
-        Array<T> &Create(size_t count, DevicePtr device = GetDefaultDevice()) {
+        Array <T> &Create(size_t count, DevicePtr device = GetDefaultDevice()) {
             get()->Create(count * sizeof(T), device);
             return CurrentArray();
         }
 
-        Array<T> &CurrentArray() const {
+        Array <T> &CurrentArray() const {
             return *std::static_pointer_cast<Array<T>>(get()->CurrentArray());
         }
 
-        Array<T> &Read() const {
+        Array <T> &Read() const {
             get()->Wait();
-            get()->ReadAsync(GetDefaultWorker());
+            while (!get()->ReadAsync(GetDefaultWorker()));
             return CurrentArray();
         }
 
-        Array<T> &Write() {
+        Array <T> &Write() {
             get()->Wait();
-            get()->WriteAsync(GetDefaultWorker());
+            while (!get()->WriteAsync(GetDefaultWorker()));
             return CurrentArray();
         }
 

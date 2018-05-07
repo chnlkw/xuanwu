@@ -42,7 +42,7 @@ namespace Xuanwu {
             return std::make_unique<EventDummy>();
         } else if (dst.isGPU() || src.isGPU()) {
             CUDA_CALL(cudaMemcpyAsync, dst, src, bytes, cudaMemcpyDefault, stream);
-            return std::make_unique<EventGPU>((cudaStream_t)0);
+            return std::make_unique<EventGPU>(stream);
         } else {
             LOG(FATAL) << "CPUCopy " << src << " to " << dst << " not supported";
             abort();
