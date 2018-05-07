@@ -46,7 +46,7 @@ namespace Xuanwu {
 
         void start_worker();
     public:
-        explicit CPUWorker(CPUDevice *cpu);
+        explicit CPUWorker(CPUDevice &cpu);
 
         ~CPUWorker();
 

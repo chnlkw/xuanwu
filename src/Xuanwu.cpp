@@ -15,9 +15,9 @@ namespace Xuanwu {
         return e.get();
     }
 
-    Xuanwu* Xuanwu::xw;
+    Xuanwu *Xuanwu::xw;
 
-    Xuanwu* Xuanwu::GetXuanwu() {
+    Xuanwu *Xuanwu::GetXuanwu() {
         return xw;
     }
 
@@ -30,7 +30,7 @@ namespace Xuanwu {
     }
 
     WorkerPtr Xuanwu::GetWorker() {
-        return worker.get();
+        return worker;
     }
 
     DevicePtr Xuanwu::GetDevice() {
@@ -41,10 +41,17 @@ namespace Xuanwu {
             mm(std::move(mm)),
             e(std::move(engine)) {
         allocator.reset(new CPUAllocator());
-        device = std::make_unique<CPUDevice>();
-        worker = std::make_unique<CPUWorker>((CPUDevice *) device.get());
         xw = this;
         all_devices_ = e->GetDevices();
+        for (auto &d : all_devices_) {
+            if (auto p = std::dynamic_pointer_cast<CPUDevice>(d)) {
+                device = p;
+                break;
+            }
+        }
+        if (!device)
+            device = std::make_shared<CPUDevice>();
+        worker = &device->GetWorker();
     }
 
     DevicePtr GetDefaultDevice() {

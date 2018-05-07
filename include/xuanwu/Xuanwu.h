@@ -31,8 +31,8 @@ namespace Xuanwu {
 
     class Xuanwu {
         std::vector<std::shared_ptr<DeviceBase>> all_devices_;
-        std::unique_ptr<DeviceBase> device;
-        std::unique_ptr<WorkerBase> worker;
+        std::shared_ptr<CPUDevice> device;
+        WorkerPtr worker;
         std::shared_ptr<AllocatorBase> allocator;
         std::shared_ptr<MMBase> mm;
         std::unique_ptr<Engine> e;

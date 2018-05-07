@@ -41,9 +41,8 @@ namespace Xuanwu {
 
     CPUDevice::CPUDevice() :
             DeviceBase() {
-        workers_.emplace_back(new CPUWorker(this));
-        LG(INFO) << "Create CPUDevice " << this << " num_workers = "
-                 << workers_.size() << " ID = ";
+        workers_.emplace_back(new CPUWorker(*this));
+        LG(INFO) << "Create CPUDevice " << this << " num_workers = " << workers_.size();
     }
 
     void CPUDevice::RunTask(TaskPtr t) {

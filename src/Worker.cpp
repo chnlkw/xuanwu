@@ -33,8 +33,8 @@ namespace Xuanwu {
 //        cv_.notify_one();
     }
 
-    CPUWorker::CPUWorker(CPUDevice *cpu) :
-            WorkerBase(cpu),
+    CPUWorker::CPUWorker(CPUDevice &cpu) :
+            WorkerBase(&cpu),
             worker_thread_([this]() { start_worker(); }) {
         CUDA_CALL(cudaStreamCreate, &stream_);
     }

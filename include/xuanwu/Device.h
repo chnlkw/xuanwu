@@ -18,6 +18,10 @@ namespace Xuanwu {
 
         int ScoreRunTask(TaskPtr t) override;
 
+        CPUWorker& GetWorker() {
+            return *(CPUWorker*)workers_.at(0).get();
+        }
+
         void log(el::base::type::ostream_t &os) const override;
     };
 
