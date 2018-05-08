@@ -8,6 +8,10 @@ jobs:
     steps:
 
       - checkout
+          post:
+            - git submodule init
+            - git submodule update
+
 
       - run:
           name: CMake Build

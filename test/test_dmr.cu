@@ -1,8 +1,7 @@
 #include <xuanwu.cuh>
 #include <xuanwu/dmr/PartitionedDMR.h>
 #include <gtest/gtest.h>
-#include "../include/xuanwu.hpp"
-#include "../../../../../../usr/local/cuda/include/driver_types.h"
+#include <random>
 
 namespace std {
     template<class K, class V>
