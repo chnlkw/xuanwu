@@ -262,6 +262,13 @@ namespace Xuanwu {
                     meta.step++;
                 }
             }
+            for (auto &m : meta.task->Metas()) {
+                if (m.data->GetPinnedDevice().first) {
+                    bool finished = m.data->ReadAsync(this, m.data->GetPinnedDevice().first);
+                    LG(DEBUG) << *this << " write back " << *m.data << " to dev " << m.data->GetPinnedDevice().first
+                              << " finished=" << finished;
+                }
+            }
             ret.push_back(meta.task);
             queue_.pop_front();
         }

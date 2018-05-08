@@ -106,7 +106,7 @@ namespace Xuanwu {
                     }
                 }
             }
-            if (m.data->device_pinned_) {
+            if (m.data->device_pinned_ && m.data->device_pinned_strict_) {
                 for (auto it = dev_score.begin(); it != dev_score.end();) {
                     if (it->first != m.data->device_pinned_) {
                         LG(DEBUG) << *it->first << " has been erased because pinned " << m.data;

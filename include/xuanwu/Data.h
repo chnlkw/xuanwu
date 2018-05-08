@@ -33,6 +33,7 @@ namespace Xuanwu {
         size_t uid;
 
         DevicePtr device_pinned_ = nullptr;
+        bool device_pinned_strict_ = true;
 
     public:
         virtual ~DataBase() = default;
@@ -91,7 +92,11 @@ namespace Xuanwu {
 
         std::string Name() const { return name_; }
 
-        void PinnedToDevice(DevicePtr dev);
+        void PinnedToDevice(DevicePtr dev, bool is_strict = true);
+
+        std::pair<DevicePtr, bool> GetPinnedDevice() {
+            return {device_pinned_, device_pinned_strict_};
+        };
     };
 
     template<class T>
@@ -129,22 +134,22 @@ namespace Xuanwu {
             get()->clear();
         }
 
-        Array <T> &Create(size_t count, DevicePtr device = GetDefaultDevice()) {
+        Array<T> &Create(size_t count, DevicePtr device = GetDefaultDevice()) {
             get()->Create(count * sizeof(T), device);
             return CurrentArray();
         }
 
-        Array <T> &CurrentArray() const {
+        Array<T> &CurrentArray() const {
             return *std::static_pointer_cast<Array<T>>(get()->CurrentArray());
         }
 
-        Array <T> &Read() const {
+        Array<T> &Read() const {
             get()->Wait();
             while (!get()->ReadAsync(GetDefaultWorker()));
             return CurrentArray();
         }
 
-        Array <T> &Write() {
+        Array<T> &Write() {
             get()->Wait();
             while (!get()->WriteAsync(GetDefaultWorker()));
             return CurrentArray();

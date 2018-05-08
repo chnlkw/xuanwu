@@ -103,8 +103,9 @@ namespace Xuanwu {
         return WriteAsync(worker, worker->Device());
     }
 
-    void DataBase::PinnedToDevice(DevicePtr dev) {
+    void DataBase::PinnedToDevice(DevicePtr dev, bool is_strict) {
         device_pinned_ = dev;
+        device_pinned_strict_ = is_strict;
     }
 
     DataImpl::DataImpl(MMBase *mm, size_t size) : DataBase(mm, size) {}
