@@ -28,14 +28,14 @@ DataBasePtr MMImpl::MakeDataBase(size_t size) {
 ArrayBasePtr MMImpl::MakeArrayBase(size_t bytes, DevicePtr device) {
     auto &cache = caches_[device];
     auto allocator = GetAllocatorByDevice(device);
-    ArrayBasePtr arr = std::make_shared<ArrayBase>(bytes, GetAllocatorByDevice(device));
+    ArrayBasePtr arr = std::make_shared<ArrayBase>(bytes, allocator);
     if (arr->data()) return arr;
     //try release
     for (auto node = cache.array_lru.Last(); node; node = node->left) {
         if (auto p = node->val.lock()) {
             if (!p->Busy()) {
                 p->Free();
-                arr = std::make_shared<ArrayBase>(bytes, GetAllocatorByDevice(device));
+                arr = std::make_shared<ArrayBase>(bytes, allocator);
                 if (arr->data())
                     return arr;
             }

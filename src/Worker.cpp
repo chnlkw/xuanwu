@@ -175,11 +175,11 @@ namespace Xuanwu {
                         auto &m = *it;
                         CLOG(DEBUG, "Worker") << "s11 " << m;
                         if (m.readable) {
-                            if (!m.data->ReadAsync(this, device_))
+                            if (m.data->ReadAsync(this, device_)->Busy())
                                 return ret;
                         }
                         if (m.writable && m.data->Bytes() > 0) {
-                            if (!m.data->WriteAsync(this, device_))
+                            if (m.data->WriteAsync(this, device_)->Busy())
                                 return ret;
                         }
                         CLOG(DEBUG, "Worker") << "s12 " << m;
@@ -189,10 +189,10 @@ namespace Xuanwu {
                     for (auto &m : t->Metas()) {
                         CLOG(DEBUG, "Worker") << "s21 " << m;
                         if (m.readable) {
-                            while (!m.data->ReadAsync(this, device_));
+                            while (m.data->ReadAsync(this, device_)->Busy()) {}
                         }
                         if (m.writable && m.data->Bytes() > 0) {
-                            while (!m.data->WriteAsync(this, device_));
+                            while (m.data->WriteAsync(this, device_)->Busy()) {}
                         }
                         CLOG(DEBUG, "Worker") << "s22 " << m;
                     }
@@ -267,6 +267,7 @@ namespace Xuanwu {
                     bool finished = m.data->ReadAsync(this, m.data->GetPinnedDevice().first);
                     LG(DEBUG) << *this << " write back " << *m.data << " to dev " << m.data->GetPinnedDevice().first
                               << " finished=" << finished;
+                    m.data->GetMM()->GetCache(device_).Push(m.data->CurrentArray());
                 }
             }
             ret.push_back(meta.task);

@@ -25,6 +25,31 @@ namespace Xuanwu {
         virtual ArrayBasePtr MakeArrayBase(size_t bytes, DevicePtr device) {
             return std::make_shared<ArrayBase>(bytes, GetAllocatorByDevice(device));
         }
+
+        struct Cache {
+            using Lru = LRU<std::weak_ptr<ArrayBase>>;
+            Lru array_lru;
+            std::map<std::weak_ptr<ArrayBase>, Lru::Node *, std::owner_less> mapping;
+
+            void TryPop(std::weak_ptr<ArrayBase> p) {
+                auto it = mapping.find(p);
+                if (it != mapping.end()) {
+                    array_lru->Delete(it->second);
+                }
+            }
+
+            void Push(std::weak_ptr<ArrayBase> p) {
+                auto it = mapping.find(p);
+                assert (it == mapping.end());
+                mapping[p] = array_lru->Insert(p);
+            }
+        };
+
+        std::map<DevicePtr, Cache> caches_;
+
+        Cache &GetCache(DevicePtr dev) {
+            return caches_[dev];
+        }
     };
 
     class MMImpl : public MMBase {
@@ -36,13 +61,6 @@ namespace Xuanwu {
         DataBasePtr MakeDataBase(size_t size) override;
 
         ArrayBasePtr MakeArrayBase(size_t bytes, DevicePtr device) override;
-
-        struct Cache {
-            using Lru = LRU<std::weak_ptr<ArrayBase>> ;
-            Lru array_lru;
-            std::map<std::weak_ptr<ArrayBase>, Lru::Node*> mapping;
-        };
-        std::map<DevicePtr, Cache> caches_;
 
     };
 

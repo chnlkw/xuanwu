@@ -52,11 +52,11 @@ namespace Xuanwu {
 
         using FnCopy = std::function<void(Ptr, Ptr, size_t)>; // copy(dst, src, bytes)
 
-        virtual bool ReadAsync(WorkerPtr worker, DevicePtr dev) = 0;
+        virtual ArrayBasePtr ReadAsync(WorkerPtr worker, DevicePtr dev) = 0;
 
         bool ReadAsync(WorkerPtr worker);
 
-        virtual bool WriteAsync(WorkerPtr worker, DevicePtr dev) = 0;
+        virtual ArrayBasePtr WriteAsync(WorkerPtr worker, DevicePtr dev) = 0;
 
         bool WriteAsync(WorkerPtr worker);
 
@@ -186,7 +186,7 @@ namespace Xuanwu {
     };
 
     class DataImpl : public DataBase {
-        std::map<DevicePtr, std::pair<ArrayBasePtr, Event>> replicas;
+        std::map<DevicePtr, ArrayBasePtr> replicas;
         std::map<DevicePtr, ArrayBasePtr> invalids;
 
         mutable ArrayBasePtr current_array_ = nullptr;
@@ -196,9 +196,9 @@ namespace Xuanwu {
 
         void ResizeBytes(size_t bytes) override;
 
-        bool ReadAsync(WorkerPtr worker, DevicePtr dev) override;
+        ArrayBasePtr ReadAsync(WorkerPtr worker, DevicePtr dev) override;
 
-        bool WriteAsync(WorkerPtr worker, DevicePtr dev) override;
+        ArrayBasePtr WriteAsync(WorkerPtr worker, DevicePtr dev) override;
 
         void *data() const override;
 

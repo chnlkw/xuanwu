@@ -122,7 +122,7 @@ namespace Xuanwu {
         bytes_ = bytes;
     }
 
-    bool DataImpl::ReadAsync(WorkerPtr worker, DevicePtr dev) {
+    ArrayBasePtr DataImpl::ReadAsync(WorkerPtr worker, DevicePtr dev) {
         LG(DEBUG) << "DataImpl ReadAsync :: Start" << *this << " at " << *dev;
         if (replicas.count(dev) == 0) {
             ArrayBasePtr arr;
@@ -141,36 +141,40 @@ namespace Xuanwu {
             int max_copy_speed = 0;
             for (auto it = replicas.begin(); it != replicas.end(); ++it) {
 //            for (auto &r : replicas) {
-                int copy_speed = CopySpeed(arr->GetPtr(), it->second.first->GetPtr());
+                int copy_speed = CopySpeed(arr->GetPtr(), it->second->GetPtr());
                 if (max_copy_speed < copy_speed) {
                     max_copy_speed = copy_speed;
                     from = it;
                 }
             }
-            if (!from->second.second->QueryFinished()) {
+            if (from->second->Busy()) {
                 return false;
             }
-            assert(from->second.first->GetBytes() >= bytes_);
-            LG(DEBUG) << "DataImpl ReadAsync Copy :: " << *this << " -- " << from->second.first->GetPtr() << " to " << arr->GetPtr() << " bytes=" << bytes_;
-            Event event = worker->Copy(arr->GetPtr(), from->second.first->GetPtr(), bytes_);
-            replicas[dev] = {arr, std::move(event)};
+            assert(from->second->GetBytes() >= bytes_);
+            LG(DEBUG) << "DataImpl ReadAsync Copy :: " << *this << " -- " << from->second->GetPtr() << " to " << arr->GetPtr() << " bytes=" << bytes_;
+            Event event = worker->Copy(arr->GetPtr(), from->second->GetPtr(), bytes_);
+            arr->AddEvent(std::move(event));
+            replicas[dev] = arr;
         }
-        if (replicas[dev].first->GetBytes() > bytes_)
-            replicas[dev].first->ResizeBytes(bytes_);
+        if (replicas[dev]->GetBytes() > bytes_)
+            replicas[dev]->ResizeBytes(bytes_);
 
-        current_array_ = replicas[dev].first;
+        current_array_ = replicas[dev];
         assert(current_array_->GetBytes() >= bytes_);
+
+        mm_->GetCache(dev).TryPop(current_array_);
+
         LG(DEBUG) << "DataImpl ReadAsync Finish :: " << *this << " at " << *dev;
-        return replicas[dev].second->QueryFinished();
+        return replicas[dev];
     }
 
-    bool DataImpl::WriteAsync(WorkerPtr worker, DevicePtr dev) {
+    ArrayBasePtr DataImpl::WriteAsync(WorkerPtr worker, DevicePtr dev) {
         assert(bytes_ > 0);
         LG(DEBUG) << "DataImpl WriteAsync :: Start" << *this << " at " << *dev;
 //    Invalid others
         for (auto it = replicas.begin(); it != replicas.end();) {
             if (it->first != dev) {
-                invalids[it->first] = it->second.first;
+                invalids[it->first] = it->second;
                 it = replicas.erase(it);
             } else {
                 ++it;
@@ -181,12 +185,12 @@ namespace Xuanwu {
 //            if (!replicas.empty())
 //                worker->Copy(arr->GetPtr(), replicas.begin()->second->GetPtr(), bytes_);
 //                arr->CopyFromAsync(*replicas.begin()->second, worker);
-            replicas[dev] = {arr, std::make_unique<EventDummy>()};
+            replicas[dev] = arr;
         }
-        current_array_ = replicas[dev].first;
+        current_array_ = replicas[dev];
         assert(current_array_->GetBytes() >= bytes_);
         LG(DEBUG) << "DataImpl WriteAsync :: Finish" << *this << " at " << *dev;
-        return true;
+        return current_array_;
     }
 
     float DataImpl::ReadOverhead(DevicePtr dev) {
