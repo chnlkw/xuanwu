@@ -25,6 +25,25 @@ DataBasePtr MMImpl::MakeDataBase(size_t size) {
     return std::make_shared<DataImpl>(this, size);
 }
 
+ArrayBasePtr MMImpl::MakeArrayBase(size_t bytes, DevicePtr device) {
+    auto &cache = caches_[device];
+    auto allocator = GetAllocatorByDevice(device);
+    ArrayBasePtr arr = std::make_shared<ArrayBase>(bytes, GetAllocatorByDevice(device));
+    if (arr->data()) return arr;
+    //try release
+    for (auto node = cache.array_lru.Last(); node; node = node->left) {
+        if (auto p = node->val.lock()) {
+            if (!p->Busy()) {
+                p->Free();
+                arr = std::make_shared<ArrayBase>(bytes, GetAllocatorByDevice(device));
+                if (arr->data())
+                    return arr;
+            }
+        }
+    }
+    return arr;
+}
+
 #if 0
 AllocatorPtr Xuanwu::MyMM::GetAllocatorByDevice(DevicePtr device) {
     if (dynamic_cast<CPUDevice *>(device)) {

@@ -132,7 +132,10 @@ namespace Xuanwu {
                 arr = invalids[dev];
                 invalids.erase(dev);
             } else {
-                arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
+//                arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
+                arr = mm_->MakeArrayBase(bytes_, dev);
+                if (arr->data() == nullptr)
+                    return false;
             }
             decltype(replicas.begin()) from;
             int max_copy_speed = 0;

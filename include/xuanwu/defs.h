@@ -80,6 +80,5 @@ namespace Xuanwu {
     class DeviceArrayBase;
 
     class LocalArrayGPU;
-
 }
 #endif //XUANWU_DEFS_H

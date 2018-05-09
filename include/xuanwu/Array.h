@@ -15,11 +15,8 @@ namespace Xuanwu {
     protected:
         AllocatorPtr allocator_;
         size_t bytes_;
+        Event event_;
         void *ptr_;
-
-        void Allocate(size_t bytes);
-
-        void Free();
 
     public:
 
@@ -46,6 +43,21 @@ namespace Xuanwu {
         void *data() const { return ptr_; }
 
         Ptr GetPtr() const;
+
+        bool Busy() {
+            if (!event_)
+                return false;
+            return event_->QueryFinished();
+        }
+
+        void AddEvent(Event&& e) {
+            assert(!Busy());
+            event_ = std::move(e);
+        }
+
+        void Allocate();
+
+        void Free();
     };
 
     template<class T>

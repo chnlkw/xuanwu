@@ -7,22 +7,23 @@
 
 #include "defs.h"
 #include <map>
+#include "lru.h"
 
 namespace Xuanwu {
     class MMBase {
+        std::map<AllocatorPtr, DataBasePtr> need_write_back_;
     public:
         virtual AllocatorPtr GetAllocatorByDevice(DevicePtr device) = 0;
 
         virtual DataBasePtr MakeDataBase(size_t size) = 0;
 
         template<class T>
-        Data<T> MakeData(size_t count) {
+        Data <T> MakeData(size_t count) {
             return Data<T>(count, this);
         }
 
-        template<class T>
-        Array<T> MakeArray(size_t count, DevicePtr device) {
-            return Array<T>(GetAllocatorByDevice(device), count);
+        virtual ArrayBasePtr MakeArrayBase(size_t bytes, DevicePtr device) {
+            return std::make_shared<ArrayBase>(bytes, GetAllocatorByDevice(device));
         }
     };
 
@@ -33,6 +34,16 @@ namespace Xuanwu {
         AllocatorPtr GetFrom(AllocatorFactoryBase *factory, DevicePtr dev);
 
         DataBasePtr MakeDataBase(size_t size) override;
+
+        ArrayBasePtr MakeArrayBase(size_t bytes, DevicePtr device) override;
+
+        struct Cache {
+            using Lru = LRU<std::weak_ptr<ArrayBase>> ;
+            Lru array_lru;
+            std::map<std::weak_ptr<ArrayBase>, Lru::Node*> mapping;
+        };
+        std::map<DevicePtr, Cache> caches_;
+
     };
 
     template<class ...Devices>
@@ -52,10 +63,13 @@ namespace Xuanwu {
 
         AllocatorFactoryPtr allocator_factory_;
 
-        MMMultiDevice(std::shared_ptr<AllocatorFactory<Device>> allocator_factory,
-                      std::shared_ptr<AllocatorFactory<Devices>>... args) :
-                MMMultiDevice<Devices...>(args...),
-                allocator_factory_(allocator_factory) {
+        MMMultiDevice(std::shared_ptr<AllocatorFactory < Device>>
+
+        allocator_factory,
+        std::shared_ptr<AllocatorFactory < Devices>>... args) :
+
+        MMMultiDevice<Devices...>(args...),
+        allocator_factory_(allocator_factory) {
         }
 
         AllocatorPtr GetAllocatorByDevice(DevicePtr device) override {

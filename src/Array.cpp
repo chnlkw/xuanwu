@@ -47,13 +47,11 @@ namespace Xuanwu {
         if (allocator_ && ptr_)
             allocator_->Free(ptr_);
         ptr_ = nullptr;
-        bytes_ = 0;
     }
 
-    void ArrayBase::Allocate(size_t bytes) {
-        bytes_ = bytes;
-        if (bytes > 0 && allocator_) {
-            ptr_ = allocator_->Alloc(bytes);
+    void ArrayBase::Allocate() {
+        if (bytes_ > 0 && allocator_) {
+            ptr_ = allocator_->Alloc(bytes_);
         } else {
             ptr_ = nullptr;
         }
