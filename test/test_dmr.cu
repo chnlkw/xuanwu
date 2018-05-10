@@ -67,9 +67,9 @@ void test_dmr(size_t npar, size_t num_element, int repeat) {
     LOG(INFO) << "Checking results";
 
     for (size_t par_id = 0; par_id < dmr2.Size(); par_id++) {
-        auto& keys = dmr2.Keys(par_id).Read();
-        auto& offs = dmr2.Offs(par_id).Read();
-        auto& values = result[par_id].Read();
+        auto &keys = dmr2.Keys(par_id).Read();
+        auto &offs = dmr2.Offs(par_id).Read();
+        auto &values = result[par_id].Read();
 
 #pragma omp parallel for reduction(+:sum_keys_2, sum_values_2)
         for (size_t i = 0; i < dmr2.Keys(par_id).size(); i++) {
@@ -82,7 +82,8 @@ void test_dmr(size_t npar, size_t num_element, int repeat) {
         }
     }
     if (sum_keys != sum_keys_2 || sum_values != sum_values_2) {
-        LOG(FATAL) << "sum not match " << sum_keys << "!=" << sum_keys_2 << " || " << sum_values << "!=" << sum_values_2;
+        LOG(FATAL) << "sum not match " << sum_keys << "!=" << sum_keys_2 << " || " << sum_values << "!="
+                   << sum_values_2;
     }
     LOG(INFO) << "Result OK";
 
@@ -126,8 +127,8 @@ TEST(Xuanwu, PartitionedDMR) {
     test_dmr(2, 1000, 1);
 }
 
-__global__ void arr_init(int* a, int n) {
-    int idx = blockIdx.x*blockDim.x+threadIdx.x;
+__global__ void arr_init(int *a, int n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < n)
         a[idx] = idx;
 }
@@ -137,22 +138,22 @@ TEST(Xuanwu, DataCreateInTask) {
     Data<int> d;
     auto gpu_task = std::make_unique<GPUTask>([=](GPUContext gpu) mutable {
         d.Create(n, gpu.dev);
-        arr_init<<<1, n>>>(d.data(), n);
+        arr_init << < 1, n >> > (d.data(), n);
     });
     TaskPtr task(new TaskBase(
-        "testcreate",
-        {},
-        std::move(gpu_task)));
+            "testcreate",
+            {},
+            std::move(gpu_task)));
     task->AddOutput(d);
     Xuanwu::AddTask(task);
     d.Read();
     ASSERT_EQ(n, d.size());
-    for (int i = 0 ; i < d.size(); i++) {
+    for (int i = 0; i < d.size(); i++) {
         ASSERT_EQ(i, d[i]);
     }
 }
 
-__global__ void local_create_kernel(DeviceArray<int>* arr_ptr) {
+__global__ void local_create_kernel(DeviceArray<int> *arr_ptr) {
     auto &arr = *arr_ptr;
     int n = 10;
     arr.Alloc(n);
@@ -162,31 +163,31 @@ __global__ void local_create_kernel(DeviceArray<int>* arr_ptr) {
 
 TEST(Xuanwu, LocalCreateInTask) {
     Data<int> sz(1);
-    Data<int*> ptr(1);
+    Data<int *> ptr(1);
     Data<int> d;
     auto gpu_task = std::make_unique<GPUTask>([=](GPUContext gpu) mutable {
-        DeviceArray<int>* arr = gpu.MakeLocalMapping(d);
-        local_create_kernel<<<1, 1, 0, gpu.stream>>>(arr);
+        DeviceArray<int> *arr = gpu.MakeLocalMapping(d);
+        local_create_kernel << < 1, 1, 0, gpu.stream >> > (arr);
     });
-    TaskPtr task(new TaskBase( "testlocalCreate", {}, std::move(gpu_task)));
+    TaskPtr task(new TaskBase("testlocalCreate", {}, std::move(gpu_task)));
     task->AddOutputs({d, ptr});
     Xuanwu::AddTask(task);
     d.Read();
     ASSERT_EQ(10, d.size());
-    for (int i = 0 ; i < d.size(); i++) {
+    for (int i = 0; i < d.size(); i++) {
         ASSERT_EQ(i, d[i]);
     }
-    while(Xuanwu::Tick());
+    while (Xuanwu::Tick());
 }
 
 __global__
-void accumulate_kernel(int *arr, int* sum) {
+void accumulate_kernel(int *arr, int *sum) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     atomicAdd(sum, arr[idx]);
 }
 
 TEST(Xuanwu, ScatterData) {
-    size_t nblocks = 50*1024/4;
+    size_t nblocks = 50 * 1024 / 4;
     int nthreads = 1024;
     size_t sz = nblocks * nthreads;
     Data<int> arr(sz);
@@ -223,4 +224,38 @@ TEST(Xuanwu, ScatterData) {
     work(1);
     work(2);
 
+}
+
+__global__ void add_kernel(int *a, int delta, size_t n) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < n) {
+        a[idx] += delta;
+    }
+}
+
+TEST(Xuanwu, Streaming) {
+    int n = 10, m = (500U << 20) / sizeof(int);
+    std::vector<Data<int>> arrs;
+    for (int i = 0; i < n; i++) {
+        Data<int> d(m);
+        d->PinnedToDevice(Xuanwu::GetDefaultDevice(), false);
+        d.Write();
+        memset(d.data(), 0, d->Bytes());
+        arrs.push_back(std::move(d));
+    }
+    int nthread = 1024;
+    int nblock = (m + nthread - 1) / nthread;
+    for (int i = 0; i < n; i++) {
+        auto gpu_task = std::make_unique<GPUTask>([=](GPUContext gpu) mutable {
+            add_kernel << < nblock, nthread >> > (arrs[i].data(), i, m);
+        });
+        TaskPtr task(new TaskBase("StreamingAdd", {}, std::move(gpu_task)));
+        task->AddInOutput(arrs[i]);
+        Xuanwu::AddTask(task);
+    }
+    for (int i = 0; i < n; i++) {
+        arrs[i].Read();
+        for (int j = 0; j < m; j++)
+            ASSERT_EQ(i, arrs[i][j]);
+    }
 }

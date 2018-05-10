@@ -79,11 +79,15 @@ namespace Xuanwu {
             }
         }
         if (off + size > size_) {
+           LG(INFO)  << "PreAllocator: Alloc=" << bytes_to_str(size) << " not enough memory, returning nullptr";
+           return nullptr;
+#if 0
             std::ostringstream os;
             os << "PreAllocator :: not enough memory when allocating " << bytes_to_str(size) << " remain "
                << bytes_to_str(size_ - allocated_);
             LG(FATAL) << os.str() << "\n" << el::base::debug::StackTrace();
             throw std::runtime_error(os.str().c_str());
+#endif
         }
         m_.emplace(off, size);
         allocated_ += size;
