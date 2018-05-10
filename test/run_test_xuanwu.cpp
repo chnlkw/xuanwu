@@ -13,6 +13,8 @@
 namespace di = boost::di;
 using namespace Xuanwu;
 
+size_t gpu_memory = 100LU<<20;
+
 namespace std {
     template<class K, class V>
     std::ostream &operator<<(std::ostream &os, const std::pair<K, V> &p) {
@@ -82,7 +84,7 @@ int main(int argc, char **argv) {
             di::bind<AllocatorFactory<CPUDevice>>().to<CudaHostAllocatorFactory>(),
 //            di::bind<AllocatorFactory<GPUDevice>>().to<CudaAllocatorFactory>(),
             di::bind<AllocatorFactory<GPUDevice>>().to<PreAllocatorFactory<CudaAllocatorFactory>>(),
-            di::bind<>.to(PreAllocatorFactory<CudaAllocatorFactory>::Space{1<<30}),
+            di::bind<>.to(PreAllocatorFactory<CudaAllocatorFactory>::Space{gpu_memory}),
             di::bind<MMBase>().to<MMMultiDevice<CPUDevice, GPUDevice>>(),
             di::bind<MyDeviceGroup>().to(MultipleDevicesGroup<CPUDevice, GPUDevice>(1, num_gpu))
     );

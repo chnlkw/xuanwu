@@ -235,8 +235,10 @@ __global__ void add_kernel(int *a, int delta, size_t n) {
     }
 }
 
+extern size_t gpu_memory;
+
 TEST(Xuanwu, Streaming) {
-    int n = 10, m = (500U << 20) / sizeof(int);
+    int n = 10, m = ::gpu_memory / 3 / sizeof(int);
     std::vector<Data<int>> arrs;
     for (int i = 0; i < n; i++) {
         Data<int> d(m);
@@ -256,8 +258,8 @@ TEST(Xuanwu, Streaming) {
         Xuanwu::AddTask(task);
     }
     for (int i = 0; i < n; i++) {
-        arrs[i].Read();
+        auto arr = arrs[i].Read().data();
         for (int j = 0; j < m; j++)
-            ASSERT_EQ(i, arrs[i][j]);
+            ASSERT_EQ(i, arr[j]);
     }
 }

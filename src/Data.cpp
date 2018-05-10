@@ -166,7 +166,7 @@ namespace Xuanwu {
         current_array_ = replicas[dev];
         assert(current_array_->GetBytes() >= bytes_);
 
-        mm_->GetCache(dev).TryPop(current_array_);
+        mm_->TryPop(dev, current_array_);
 
         LG(DEBUG) << "DataImpl ReadAsync Finish :: " << *this << " at " << *dev << " arr=" << *current_array_;
         return replicas[dev];

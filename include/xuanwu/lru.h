@@ -26,8 +26,9 @@ public:
 
     Node *Insert(T &&v) {
         assert((head != nullptr) == (tail != nullptr));
-        Node *next = head ? head->right : nullptr;
-        auto *node = new Node{std::move(v), head, next};
+        auto *node = new Node{std::move(v), nullptr, head};
+        if (head)
+            head->left = node;
         head = node;
         if (!tail)
             tail = node;
