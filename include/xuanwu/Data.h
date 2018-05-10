@@ -145,13 +145,13 @@ namespace Xuanwu {
 
         Array<T> &Read() const {
             get()->Wait();
-            while (get()->ReadAsync(GetDefaultWorker())->Busy());
+            while (get()->ReadAsync(GetDefaultWorker())->Busy()) {}
             return CurrentArray();
         }
 
         Array<T> &Write() {
             get()->Wait();
-            while (get()->WriteAsync(GetDefaultWorker())->Busy());
+            while (get()->WriteAsync(GetDefaultWorker())->Busy()) {}
             return CurrentArray();
         }
 

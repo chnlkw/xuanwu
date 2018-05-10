@@ -12,13 +12,14 @@
 namespace Xuanwu {
     class MMBase {
         std::map<AllocatorPtr, DataBasePtr> need_write_back_;
+
     public:
         virtual AllocatorPtr GetAllocatorByDevice(DevicePtr device) = 0;
 
         virtual DataBasePtr MakeDataBase(size_t size) = 0;
 
         template<class T>
-        Data <T> MakeData(size_t count) {
+        Data<T> MakeData(size_t count) {
             return Data<T>(count, this);
         }
 
@@ -37,6 +38,7 @@ namespace Xuanwu {
         std::map<DevicePtr, Cache> caches_;
 
         void TryPop(DevicePtr dev, std::weak_ptr<ArrayBase> p);
+
         void Push(DevicePtr dev, std::weak_ptr<ArrayBase> p);
     };
 
@@ -69,13 +71,13 @@ namespace Xuanwu {
 
         AllocatorFactoryPtr allocator_factory_;
 
-        MMMultiDevice(std::shared_ptr<AllocatorFactory < Device>>
+        MMMultiDevice(std::shared_ptr<AllocatorFactory<Device>>
 
-        allocator_factory,
-        std::shared_ptr<AllocatorFactory < Devices>>... args) :
+                      allocator_factory,
+                      std::shared_ptr<AllocatorFactory<Devices>>... args) :
 
-        MMMultiDevice<Devices...>(args...),
-        allocator_factory_(allocator_factory) {
+                MMMultiDevice<Devices...>(args...),
+                allocator_factory_(allocator_factory) {
         }
 
         AllocatorPtr GetAllocatorByDevice(DevicePtr device) override {

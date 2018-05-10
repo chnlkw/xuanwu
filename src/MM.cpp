@@ -109,7 +109,6 @@ ArrayBasePtr MMBase::MakeArrayBase(size_t bytes, DevicePtr device) {
 
 void MMBase::TryPop(DevicePtr dev, std::weak_ptr<ArrayBase> p) {
     caches_[dev].TryPop(std::move(p));
-
 }
 
 void MMBase::Push(DevicePtr dev, std::weak_ptr<ArrayBase> p) {
