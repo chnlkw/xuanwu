@@ -164,7 +164,9 @@ __global__ void local_create_kernel(DeviceArray<int> *arr_ptr) {
 TEST(Xuanwu, LocalCreateInTask) {
     Data<int> sz(1);
     Data<int *> ptr(1);
+    ptr->SetName("ptr");
     Data<int> d;
+    d->SetName("d");
     auto gpu_task = std::make_unique<GPUTask>([=](GPUContext gpu) mutable {
         DeviceArray<int> *arr = gpu.MakeLocalMapping(d);
         local_create_kernel << < 1, 1, 0, gpu.stream >> > (arr);

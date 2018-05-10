@@ -27,7 +27,7 @@ bool EventGPU::QueryFinished() {
         return true;
     cudaError_t err = cudaEventQuery(event);
     if (err == cudaSuccess) {
-        clean();
+//        clean();
         return true;
     } else if (err == cudaErrorNotReady) {
         return false;

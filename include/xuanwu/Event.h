@@ -21,7 +21,7 @@ namespace Xuanwu {
 
     };
 
-    using Event = std::unique_ptr<EventBase>;
+    using Event = std::shared_ptr<EventBase>;
 
     class EventDummy : public EventBase {
         bool QueryFinished() override;
@@ -38,6 +38,10 @@ namespace Xuanwu {
         ~EventGPU() override;
 
         bool QueryFinished() override;
+
+        cudaEvent_t GetEvent() const {
+            return event;
+        }
     };
 
 }

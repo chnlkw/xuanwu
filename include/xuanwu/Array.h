@@ -52,7 +52,7 @@ class ArrayBase : public el::Loggable {
             return !event_->QueryFinished();
         }
 
-        void AddEvent(Event&& e) {
+        void AddEvent(Event e) {
             assert(!Busy());
             event_ = std::move(e);
         }

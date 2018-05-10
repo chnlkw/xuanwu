@@ -145,7 +145,7 @@ namespace Xuanwu {
         assert(gpu);
         CUDA_CALL(cudaSetDevice, gpu->GPUID());
 
-        Meta meta{GetEvent(), GetEvent(), GetEvent(), GetEvent(), t, t->Metas()};
+        Meta meta{GetEvent(), GetEvent(), GetEvent(), {}, t, t->Metas()};
 
         queue_.push_back(meta);
     }
@@ -178,7 +178,7 @@ namespace Xuanwu {
                             if (m.data->ReadAsync(this, device_)->Busy())
                                 return ret;
                         }
-                        if (m.writable && m.data->Bytes() > 0) {
+                        if (m.writable && m.data->Bytes() > 0) { // ignore local_create when Bytes() == 0
                             if (m.data->WriteAsync(this, device_)->Busy())
                                 return ret;
                         }
@@ -186,16 +186,7 @@ namespace Xuanwu {
                         it = meta.task_metas.erase(it);
                     }
                     // make sure data.currentarray is set to this device
-                    for (auto &m : t->Metas()) {
-                        CLOG(DEBUG, "Worker") << "s21 " << m;
-                        if (m.readable) {
-                            while (m.data->ReadAsync(this, device_)->Busy()) {}
-                        }
-                        if (m.writable && m.data->Bytes() > 0) {
-                            while (m.data->WriteAsync(this, device_)->Busy()) {}
-                        }
-                        CLOG(DEBUG, "Worker") << "s22 " << m;
-                    }
+
                     CLOG(INFO, "Worker") << *this << " prepared ok " << *t;
                     CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
                     (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, this, t));
@@ -204,21 +195,25 @@ namespace Xuanwu {
                     CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
                     t->Run(this);
                 }
-                CUDA_CALL(cudaEventRecord, meta.end_event, stream_);
+                meta.end_event.reset(new EventGPU(stream_));
+                for (auto &m : t->Metas()) {
+                    if (m.data->CurrentArray()) { // ignore local_create
+                        m.data->CurrentArray()->AddEvent(meta.end_event);
+                    }
+                }
                 meta.step++;
             }
             if (meta.step == 2) {
-                if (!QueryEvent(meta.end_event))
+                if (!meta.end_event->QueryFinished())
                     return ret;
 
                 float tranfer_ms, calc_ms;
                 CUDA_CALL(cudaEventElapsedTime, &tranfer_ms, meta.beg_event, meta.transfer_event);
-                CUDA_CALL(cudaEventElapsedTime, &calc_ms, meta.transfer_event, meta.end_event);
+                CUDA_CALL(cudaEventElapsedTime, &calc_ms, meta.transfer_event, meta.end_event->GetEvent());
                 CLOG(INFO, "Worker") << *this << " " << *meta.task << " transfer " << tranfer_ms << " ms, "
                                      << " calc "
                                      << calc_ms << " ms";
 
-                events_unused_.push_back(meta.end_event);
                 events_unused_.push_back(meta.beg_event);
                 events_unused_.push_back(meta.transfer_event);
                 meta.step++;
