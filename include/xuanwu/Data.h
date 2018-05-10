@@ -54,11 +54,11 @@ namespace Xuanwu {
 
         virtual ArrayBasePtr ReadAsync(WorkerPtr worker, DevicePtr dev) = 0;
 
-        bool ReadAsync(WorkerPtr worker);
+        ArrayBasePtr ReadAsync(WorkerPtr worker);
 
         virtual ArrayBasePtr WriteAsync(WorkerPtr worker, DevicePtr dev) = 0;
 
-        bool WriteAsync(WorkerPtr worker);
+        ArrayBasePtr WriteAsync(WorkerPtr worker);
 
         virtual float ReadOverhead(DevicePtr device) = 0;
 
@@ -145,13 +145,13 @@ namespace Xuanwu {
 
         Array<T> &Read() const {
             get()->Wait();
-            while (!get()->ReadAsync(GetDefaultWorker()));
+            while (get()->ReadAsync(GetDefaultWorker())->Busy());
             return CurrentArray();
         }
 
         Array<T> &Write() {
             get()->Wait();
-            while (!get()->WriteAsync(GetDefaultWorker()));
+            while (get()->WriteAsync(GetDefaultWorker())->Busy());
             return CurrentArray();
         }
 

@@ -29,19 +29,19 @@ namespace Xuanwu {
         struct Cache {
             using Lru = LRU<std::weak_ptr<ArrayBase>>;
             Lru array_lru;
-            std::map<std::weak_ptr<ArrayBase>, Lru::Node *, std::owner_less> mapping;
+            std::map<std::weak_ptr<ArrayBase>, Lru::Node *, std::owner_less<std::weak_ptr<ArrayBase>>> mapping;
 
             void TryPop(std::weak_ptr<ArrayBase> p) {
                 auto it = mapping.find(p);
                 if (it != mapping.end()) {
-                    array_lru->Delete(it->second);
+                    array_lru.Delete(it->second);
                 }
             }
 
             void Push(std::weak_ptr<ArrayBase> p) {
                 auto it = mapping.find(p);
                 assert (it == mapping.end());
-                mapping[p] = array_lru->Insert(p);
+                mapping[p] = array_lru.Insert(std::move(p));
             }
         };
 

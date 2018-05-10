@@ -264,9 +264,9 @@ namespace Xuanwu {
             }
             for (auto &m : meta.task->Metas()) {
                 if (m.data->GetPinnedDevice().first) {
-                    bool finished = m.data->ReadAsync(this, m.data->GetPinnedDevice().first);
+                    auto ret = m.data->ReadAsync(this, m.data->GetPinnedDevice().first);
                     LG(DEBUG) << *this << " write back " << *m.data << " to dev " << m.data->GetPinnedDevice().first
-                              << " finished=" << finished;
+                              << " finished=" << !ret->Busy();
                     m.data->GetMM()->GetCache(device_).Push(m.data->CurrentArray());
                 }
             }

@@ -11,7 +11,7 @@
 #include "Ptr.h"
 
 namespace Xuanwu {
-    class ArrayBase {
+class ArrayBase : public el::Loggable {
     protected:
         AllocatorPtr allocator_;
         size_t bytes_;
@@ -44,10 +44,12 @@ namespace Xuanwu {
 
         Ptr GetPtr() const;
 
-        bool Busy() {
+        bool Busy() const {
+            if (ptr_ == nullptr)
+                return true;
             if (!event_)
                 return false;
-            return event_->QueryFinished();
+            return !event_->QueryFinished();
         }
 
         void AddEvent(Event&& e) {
@@ -58,6 +60,8 @@ namespace Xuanwu {
         void Allocate();
 
         void Free();
+
+        void log(el::base::type::ostream_t &os) const override;
     };
 
     template<class T>

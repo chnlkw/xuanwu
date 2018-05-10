@@ -95,11 +95,11 @@ namespace Xuanwu {
 //        return ret;
 //    }
 
-    bool DataBase::ReadAsync(WorkerPtr worker) {
+    ArrayBasePtr DataBase::ReadAsync(WorkerPtr worker) {
         return ReadAsync(worker, worker->Device());
     }
 
-    bool DataBase::WriteAsync(WorkerPtr worker) {
+    ArrayBasePtr DataBase::WriteAsync(WorkerPtr worker) {
         return WriteAsync(worker, worker->Device());
     }
 
@@ -134,8 +134,10 @@ namespace Xuanwu {
             } else {
 //                arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
                 arr = mm_->MakeArrayBase(bytes_, dev);
-                if (arr->data() == nullptr)
-                    return false;
+                LG(DEBUG) << "DataImpl ReadAsync :: MakeArrayBase " << *arr;
+                if (arr->data() == nullptr) {
+                    return arr;
+                }
             }
             decltype(replicas.begin()) from;
             int max_copy_speed = 0;
@@ -147,11 +149,13 @@ namespace Xuanwu {
                     from = it;
                 }
             }
+            LG(DEBUG) << "DataImpl ReadAsync :: from " << *from;
             if (from->second->Busy()) {
-                return false;
+                return arr;
             }
             assert(from->second->GetBytes() >= bytes_);
-            LG(DEBUG) << "DataImpl ReadAsync Copy :: " << *this << " -- " << from->second->GetPtr() << " to " << arr->GetPtr() << " bytes=" << bytes_;
+            LG(DEBUG) << "DataImpl ReadAsync Copy :: " << *this << " -- " << from->second->GetPtr() << " to "
+                      << arr->GetPtr() << " bytes=" << bytes_;
             Event event = worker->Copy(arr->GetPtr(), from->second->GetPtr(), bytes_);
             arr->AddEvent(std::move(event));
             replicas[dev] = arr;
@@ -164,7 +168,7 @@ namespace Xuanwu {
 
         mm_->GetCache(dev).TryPop(current_array_);
 
-        LG(DEBUG) << "DataImpl ReadAsync Finish :: " << *this << " at " << *dev;
+        LG(DEBUG) << "DataImpl ReadAsync Finish :: " << *this << " at " << *dev << " arr=" << *current_array_;
         return replicas[dev];
     }
 
@@ -234,7 +238,7 @@ namespace Xuanwu {
         clear();
         bytes_ = bytes;
         auto arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
-        replicas[dev] = {arr, std::make_unique<EventDummy>()};
+        replicas[dev] = arr;
 //        replicas[device] = arr;
         current_array_ = arr;
         LG(DEBUG) << "DataImpl Create : " << *this << " " << *dev << " bytes=" << bytes;

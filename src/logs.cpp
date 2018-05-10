@@ -8,6 +8,10 @@
 #include "Data.h"
 
 namespace Xuanwu {
+    void ArrayBase::log(el::base::type::ostream_t &os) const {
+        os << "Array[" << ptr_ << ", " << bytes_ << ",busy=" << Busy() <<  "]";
+    }
+
     void DataBase::log(el::base::type::ostream_t &os) const {
         os << "Data[" << Name() << "]";
         if (device_pinned_)
@@ -18,7 +22,7 @@ namespace Xuanwu {
         os << "Data[#" << GetUID() << ":" << Name() << "]";
         os << " size=" << this->Bytes();
         os << " (r:";
-        for (auto &r : replicas) os << " " << *r.first << " " << r.second.first->data();
+        for (auto &r : replicas) os << " " << *r.first << " " << r.second->data();
         os << ")";
         os << "(i:";
         for (auto &i : invalids) os << " " << *i.first << " " << i.second->data();
