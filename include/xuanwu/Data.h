@@ -187,7 +187,7 @@ namespace Xuanwu {
 
     class DataImpl : public DataBase {
         std::map<DevicePtr, std::pair<ArrayBasePtr, Event>> replicas;
-        std::map<DevicePtr, ArrayBasePtr> invalids;
+//        std::map<DevicePtr, ArrayBasePtr> invalids;
 
         mutable ArrayBasePtr current_array_ = nullptr;
 

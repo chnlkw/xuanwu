@@ -128,12 +128,12 @@ namespace Xuanwu {
             ArrayBasePtr arr;
             LOG_IF(replicas.empty(), FATAL) << *this << " calls ReadAsync() with no replicas";
             assert(!replicas.empty());
-            if (invalids.count(dev)) {
-                arr = invalids[dev];
-                invalids.erase(dev);
-            } else {
+//            if (invalids.count(dev)) {
+//                arr = invalids[dev];
+//                invalids.erase(dev);
+//            } else {
                 arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
-            }
+//            }
             decltype(replicas.begin()) from;
             int max_copy_speed = 0;
             for (auto it = replicas.begin(); it != replicas.end(); ++it) {
@@ -167,7 +167,7 @@ namespace Xuanwu {
 //    Invalid others
         for (auto it = replicas.begin(); it != replicas.end();) {
             if (it->first != dev) {
-                invalids[it->first] = it->second.first;
+//                invalids[it->first] = it->second.first;
                 it = replicas.erase(it);
             } else {
                 ++it;
@@ -217,7 +217,7 @@ namespace Xuanwu {
 
     void DataImpl::clear() {
         replicas.clear();
-        invalids.clear();
+//        invalids.clear();
         bytes_ = 0;
         current_array_ = nullptr;
 

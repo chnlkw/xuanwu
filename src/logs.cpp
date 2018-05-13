@@ -20,8 +20,8 @@ namespace Xuanwu {
         os << " (r:";
         for (auto &r : replicas) os << " " << *r.first << " " << r.second.first->data();
         os << ")";
-        os << "(i:";
-        for (auto &i : invalids) os << " " << *i.first << " " << i.second->data();
+//        os << "(i:";
+//        for (auto &i : invalids) os << " " << *i.first << " " << i.second->data();
         os << ")";
     }
 

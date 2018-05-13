@@ -70,6 +70,8 @@ TEST(Xuanwu, AddTask) {
 
 INITIALIZE_EASYLOGGINGPP
 
+size_t gpu_memory = 100LU<<20;
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
 
@@ -78,11 +80,11 @@ int main(int argc, char **argv) {
     int num_gpu = DataCopyInitP2P();
 
     auto injector = di::make_injector(
-            di::bind<>.to(GPUDevice::NumWorkers{1}),
+            di::bind<>.to(GPUDevice::NumWorkers{2}),
             di::bind<AllocatorFactory<CPUDevice>>().to<CudaHostAllocatorFactory>(),
 //            di::bind<AllocatorFactory<GPUDevice>>().to<CudaAllocatorFactory>(),
             di::bind<AllocatorFactory<GPUDevice>>().to<PreAllocatorFactory<CudaAllocatorFactory>>(),
-            di::bind<>.to(PreAllocatorFactory<CudaAllocatorFactory>::Space{1<<30}),
+            di::bind<>.to(PreAllocatorFactory<CudaAllocatorFactory>::Space{gpu_memory}),
             di::bind<MMBase>().to<MMMultiDevice<CPUDevice, GPUDevice>>(),
             di::bind<MyDeviceGroup>().to(MultipleDevicesGroup<CPUDevice, GPUDevice>(1, num_gpu))
     );
