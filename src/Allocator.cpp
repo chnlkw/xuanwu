@@ -81,7 +81,7 @@ namespace Xuanwu {
         if (off + size > size_) {
             std::ostringstream os;
             os << "PreAllocator :: not enough memory when allocating " << bytes_to_str(size) << " remain "
-               << bytes_to_str(size_ - allocated_);
+               << bytes_to_str(size_ - allocated_) << " total " << bytes_to_str(size_);
             LG(FATAL) << os.str() << "\n" << el::base::debug::StackTrace();
             throw std::runtime_error(os.str().c_str());
         }
@@ -89,8 +89,8 @@ namespace Xuanwu {
         allocated_ += size;
         LG(DEBUG) << "PreAllocator: " << " Alloc=" << bytes_to_str(size) << " ptr_ = " << ptr_ << " off = "
                   << off;
-        LG(INFO) << "PreAllocator: " << " Alloc=" << bytes_to_str(size) << " allocated="
-                 << bytes_to_str(allocated_) << " remain=" << bytes_to_str(size_ - allocated_);
+        LG(INFO) << "PreAllocator: " << "Total=" << bytes_to_str(size_) << " Alloc=" << bytes_to_str(size)
+                 << " allocated=" << bytes_to_str(allocated_) << " remain=" << bytes_to_str(size_ - allocated_);
         return (char *) ptr_ + off;
     }
 
@@ -104,8 +104,8 @@ namespace Xuanwu {
             throw std::runtime_error(os.str().c_str());
         }
         allocated_ -= it->second;
-        LG(INFO) << "PreAllocator: " << " Free=" << bytes_to_str(it->second) << " allocated=" << bytes_to_str(allocated_)
-                 << " remain=" << bytes_to_str(size_ - allocated_);
+        LG(INFO) << "PreAllocator: " << "Total=" << bytes_to_str(size_) << " Free=" << bytes_to_str(it->second)
+                 << " allocated=" << bytes_to_str(allocated_) << " remain=" << bytes_to_str(size_ - allocated_);
         m_.erase(it);
     }
 

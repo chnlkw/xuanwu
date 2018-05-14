@@ -77,10 +77,11 @@ int main(int argc, char **argv) {
 
     el::Loggers::configureFromGlobal("logging.conf");
 
+
     int num_gpu = DataCopyInitP2P();
 
     auto injector = di::make_injector(
-            di::bind<>.to(GPUDevice::NumWorkers{2}),
+            di::bind<>.to(GPUDevice::NumWorkers{4}),
             di::bind<AllocatorFactory<CPUDevice>>().to<CudaHostAllocatorFactory>(),
 //            di::bind<AllocatorFactory<GPUDevice>>().to<CudaAllocatorFactory>(),
             di::bind<AllocatorFactory<GPUDevice>>().to<PreAllocatorFactory<CudaAllocatorFactory>>(),

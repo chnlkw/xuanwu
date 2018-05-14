@@ -156,8 +156,8 @@ namespace Xuanwu {
             replicas[dev].first->ResizeBytes(bytes_);
 
         current_array_ = replicas[dev].first;
-        assert(current_array_->GetBytes() >= bytes_);
-        LG(DEBUG) << "DataImpl ReadAsync Finish :: " << *this << " at " << *dev;
+        assert(current_array_.lock()->GetBytes() >= bytes_);
+        LG(INFO) << "DataImpl ReadAsync Finish :: " << *this << " at " << *dev;
         return replicas[dev].second->QueryFinished();
     }
 
@@ -181,8 +181,8 @@ namespace Xuanwu {
             replicas[dev] = {arr, std::make_unique<EventDummy>()};
         }
         current_array_ = replicas[dev].first;
-        assert(current_array_->GetBytes() >= bytes_);
-        LG(DEBUG) << "DataImpl WriteAsync :: Finish" << *this << " at " << *dev;
+        assert(current_array_.lock()->GetBytes() >= bytes_);
+        LG(INFO) << "DataImpl WriteAsync :: Finish" << *this << " at " << *dev;
         return true;
     }
 
@@ -198,29 +198,25 @@ namespace Xuanwu {
     }
 
     void *DataImpl::data() const {
-        LOG_IF(!current_array_, FATAL) << *this << " Data::current_array_ is null";
-        assert(current_array_);
-        return current_array_->data();
+        LOG_IF(current_array_.expired(), FATAL) << *this << " Data::current_array_ is null";
+        return current_array_.lock()->data();
     }
 
     void *DataImpl::data() {
-        LOG_IF(!current_array_, FATAL) << *this << " Data::current_array_ is null";
-        assert(current_array_);
-        return current_array_->data();
+        LOG_IF(current_array_.expired(), FATAL) << *this << " Data::current_array_ is null";
+        return current_array_.lock()->data();
     }
 
     Ptr DataImpl::GetPtr() {
-        LOG_IF(!current_array_, FATAL) << *this << " Data::current_array_ is null";
-        assert(current_array_);
-        return current_array_->GetPtr();
+        LOG_IF(current_array_.expired(), FATAL) << *this << " Data::current_array_ is null";
+        return current_array_.lock()->GetPtr();
     }
 
     void DataImpl::clear() {
         replicas.clear();
 //        invalids.clear();
         bytes_ = 0;
-        current_array_ = nullptr;
-
+        current_array_.reset();
     }
 
     void DataImpl::Create(size_t bytes, DevicePtr dev) {
@@ -234,6 +230,6 @@ namespace Xuanwu {
     }
 
     ArrayBasePtr DataImpl::CurrentArray() const {
-        return current_array_;
+        return current_array_.lock();
     }
 }

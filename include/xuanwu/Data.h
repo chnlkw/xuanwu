@@ -189,7 +189,7 @@ namespace Xuanwu {
         std::map<DevicePtr, std::pair<ArrayBasePtr, Event>> replicas;
 //        std::map<DevicePtr, ArrayBasePtr> invalids;
 
-        mutable ArrayBasePtr current_array_ = nullptr;
+        mutable std::weak_ptr<ArrayBase> current_array_;
 
     public:
         DataImpl(MMBase *mm, size_t size);

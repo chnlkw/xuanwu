@@ -56,8 +56,8 @@ namespace Xuanwu {
                         if (!m.data->WriteAsync(this, device_))
                             return false;
                     }
-                    CLOG(DEBUG, "CPUWorker prepare OK ") << m;
                 }
+                LG(INFO) << "CPUWorker Prepare OK " << *t;
                 {
                     std::unique_lock<std::mutex> lk(m_);
                     running_tasks_.push_back(t);
@@ -102,7 +102,7 @@ namespace Xuanwu {
             for (TaskPtr t : tasks) {
                 Clock clk;
 
-                CLOG(INFO, "Worker") << *this << " Run " << *t;
+                LG(INFO) << *this << " Run " << *t;
 
                 auto cputask = dynamic_cast<CPUTask *>(t.get());
                 if (!cputask)
@@ -111,7 +111,7 @@ namespace Xuanwu {
 
                 (*cputask)(CPUContext(cpu, this));
 
-                CLOG(INFO, "Worker") << *this << " " << *t << " uses "
+                LG(INFO) << *this << " " << *t << " uses "
                                      << clk.timeElapsed() << " seconds";
             }
 
@@ -133,13 +133,13 @@ namespace Xuanwu {
 
     GPUWorker::GPUWorker(GPUDevice *gpu) :
             WorkerBase(gpu) {
-        CLOG(INFO, "Worker") << "Create GPU Worker with device = " << gpu->GPUID();
         CUDA_CALL(cudaSetDevice, gpu->GPUID());
         CUDA_CALL(cudaStreamCreate, &stream_);
+        LG(INFO) << "Create GPU Worker with device = " << gpu->GPUID() << " stream = " << stream_;
     }
 
     void GPUWorker::RunTask(TaskPtr t) {
-        CLOG(INFO, "Worker") << *this << " Run " << *t;
+        LG(INFO) << *this << " Run " << *t;
 
         auto gpu = dynamic_cast<GPUDevice *>(device_);
         assert(gpu);
@@ -158,7 +158,7 @@ namespace Xuanwu {
         while (!Empty()) {
             Meta &meta = queue_.front();
             TaskPtr &t = meta.task;
-            CLOG(DEBUG, "Worker") << *this << " Meta step=" << meta.step << " Query " << t << " " << *t;
+//            CLOG(DEBUG, "Worker") << *this << " Meta step=" << meta.step << " Query " << t << " " << *t;
             if (meta.step == 0) {
                 CUDA_CALL(cudaEventRecord, meta.beg_event, stream_);
                 meta.step++;
@@ -196,7 +196,7 @@ namespace Xuanwu {
                         }
                         CLOG(DEBUG, "Worker") << "s22 " << m;
                     }
-                    CLOG(INFO, "Worker") << *this << " prepared ok " << *t;
+                    CLOG(INFO, "Worker") << *this << " Prepare OK " << *t;
                     CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
                     (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, this, t));
                 } else {
