@@ -15,6 +15,8 @@ namespace Xuanwu {
 
         virtual DataBasePtr MakeDataBase(size_t size) = 0;
 
+        virtual ~MMBase() {}
+
         template<class T>
         Data<T> MakeData(size_t count) {
             return Data<T>(count, this);

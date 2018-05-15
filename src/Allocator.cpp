@@ -58,6 +58,9 @@ namespace Xuanwu {
     PreAllocator::~PreAllocator() {
         if (allocated_ > 0) {
             fprintf(stderr, "[WARN] dangling pointer to PreAllocater, allocated size = %lu\n", allocated_);
+            for (auto it = m_.begin(); it != m_.end(); ++it) {
+                fprintf(stderr, "      not freed pointer %p, %lu\n", ptr_ + it->first, it->second);
+            }
         }
         base_allocator_->Free(ptr_);
     }
