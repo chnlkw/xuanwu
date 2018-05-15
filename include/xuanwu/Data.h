@@ -80,7 +80,7 @@ namespace Xuanwu {
 
         virtual void Create(size_t bytes, DevicePtr device) = 0;
 
-        virtual ArrayBasePtr CurrentArray() const = 0;
+        virtual ArrayBase* CurrentArray() const = 0;
 
         MMBase *GetMM() const { return mm_; }
 
@@ -140,7 +140,7 @@ namespace Xuanwu {
         }
 
         Array<T> &CurrentArray() const {
-            return *std::static_pointer_cast<Array<T>>(get()->CurrentArray());
+            return *static_cast<Array<T>*>(get()->CurrentArray());
         }
 
         Array<T> &Read() const {
@@ -189,7 +189,7 @@ namespace Xuanwu {
         std::map<DevicePtr, std::pair<ArrayBasePtr, Event>> replicas;
 //        std::map<DevicePtr, ArrayBasePtr> invalids;
 
-        mutable std::weak_ptr<ArrayBase> current_array_;
+        mutable ArrayBase* current_array_ = nullptr;
 
     public:
         DataImpl(MMBase *mm, size_t size);
@@ -208,7 +208,7 @@ namespace Xuanwu {
 
         void Create(size_t bytes, DevicePtr device) override;
 
-        ArrayBasePtr CurrentArray() const override;
+        ArrayBase* CurrentArray() const override;
 
         float ReadOverhead(DevicePtr dev) override;
 

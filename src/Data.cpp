@@ -132,7 +132,7 @@ namespace Xuanwu {
 //                arr = invalids[dev];
 //                invalids.erase(dev);
 //            } else {
-                arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
+            arr = std::make_unique<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
 //            }
             decltype(replicas.begin()) from;
             int max_copy_speed = 0;
@@ -148,15 +148,16 @@ namespace Xuanwu {
                 return false;
             }
             assert(from->second.first->GetBytes() >= bytes_);
-            LG(DEBUG) << "DataImpl ReadAsync Copy :: " << *this << " -- " << from->second.first->GetPtr() << " to " << arr->GetPtr() << " bytes=" << bytes_;
+            LG(DEBUG) << "DataImpl ReadAsync Copy :: " << *this << " -- " << from->second.first->GetPtr() << " to "
+                      << arr->GetPtr() << " bytes=" << bytes_;
             Event event = worker->Copy(arr->GetPtr(), from->second.first->GetPtr(), bytes_);
-            replicas[dev] = {arr, std::move(event)};
+            replicas.emplace(std::make_pair(dev, std::make_pair(std::move(arr), std::move(event))));
         }
         if (replicas[dev].first->GetBytes() > bytes_)
             replicas[dev].first->ResizeBytes(bytes_);
 
-        current_array_ = replicas[dev].first;
-        assert(current_array_.lock()->GetBytes() >= bytes_);
+        current_array_ = replicas[dev].first.get();
+        assert(current_array_->GetBytes() >= bytes_);
         LG(INFO) << "DataImpl ReadAsync Finish :: " << *this << " at " << *dev;
         return replicas[dev].second->QueryFinished();
     }
@@ -168,20 +169,21 @@ namespace Xuanwu {
         for (auto it = replicas.begin(); it != replicas.end();) {
             if (it->first != dev) {
 //                invalids[it->first] = it->second.first;
+                LG(INFO) << "DataImpl WriteAsync :: erase " << *this << " at " << *it->first;
                 it = replicas.erase(it);
             } else {
                 ++it;
             }
         }
         if (!replicas.count(dev)) {
-            auto arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
+            auto arr = std::make_unique<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
 //            if (!replicas.empty())
 //                worker->Copy(arr->GetPtr(), replicas.begin()->second->GetPtr(), bytes_);
 //                arr->CopyFromAsync(*replicas.begin()->second, worker);
-            replicas[dev] = {arr, std::make_unique<EventDummy>()};
+            replicas.emplace(std::make_pair(dev, std::make_pair(std::move(arr), std::make_unique<EventDummy>())));
         }
-        current_array_ = replicas[dev].first;
-        assert(current_array_.lock()->GetBytes() >= bytes_);
+        current_array_ = replicas[dev].first.get();
+        assert(current_array_->GetBytes() >= bytes_);
         LG(INFO) << "DataImpl WriteAsync :: Finish" << *this << " at " << *dev;
         return true;
     }
@@ -198,38 +200,38 @@ namespace Xuanwu {
     }
 
     void *DataImpl::data() const {
-        LOG_IF(current_array_.expired(), FATAL) << *this << " Data::current_array_ is null";
-        return current_array_.lock()->data();
+        LOG_IF(!current_array_, FATAL) << *this << " Data::current_array_ is null";
+        return current_array_->data();
     }
 
     void *DataImpl::data() {
-        LOG_IF(current_array_.expired(), FATAL) << *this << " Data::current_array_ is null";
-        return current_array_.lock()->data();
+        LOG_IF(!current_array_, FATAL) << *this << " Data::current_array_ is null";
+        return current_array_->data();
     }
 
     Ptr DataImpl::GetPtr() {
-        LOG_IF(current_array_.expired(), FATAL) << *this << " Data::current_array_ is null";
-        return current_array_.lock()->GetPtr();
+        LOG_IF(!current_array_, FATAL) << *this << " Data::current_array_ is null";
+        return current_array_->GetPtr();
     }
 
     void DataImpl::clear() {
         replicas.clear();
 //        invalids.clear();
         bytes_ = 0;
-        current_array_.reset();
+        current_array_ = nullptr;
     }
 
     void DataImpl::Create(size_t bytes, DevicePtr dev) {
         clear();
         bytes_ = bytes;
-        auto arr = std::make_shared<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
-        replicas[dev] = {arr, std::make_unique<EventDummy>()};
+        auto arr = std::make_unique<ArrayBase>(bytes_, mm_->GetAllocatorByDevice(dev));
+        replicas.emplace(std::make_pair(dev, std::make_pair(std::move(arr), std::make_unique<EventDummy>())));
+        current_array_ = replicas[dev].first.get();
 //        replicas[device] = arr;
-        current_array_ = arr;
         LG(DEBUG) << "DataImpl Create : " << *this << " " << *dev << " bytes=" << bytes;
     }
 
-    ArrayBasePtr DataImpl::CurrentArray() const {
-        return current_array_.lock();
+    ArrayBase* DataImpl::CurrentArray() const {
+        return current_array_;
     }
 }

@@ -55,9 +55,9 @@ namespace Xuanwu {
     class MMBase;
 
     using AllocatorFactoryPtr = std::shared_ptr<AllocatorFactoryBase>;
-    using ArrayBasePtr = std::shared_ptr<ArrayBase>;
+    using ArrayBasePtr = std::unique_ptr<ArrayBase>;
     template<class T>
-    using ArrayPtr = std::shared_ptr<Array<T>>;
+    using ArrayPtr = std::unique_ptr<Array<T>>;
     using AllocatorPtr = AllocatorBase *;
     using NodePtr = std::shared_ptr<Node>;
     using DataBasePtr = std::shared_ptr<DataBase>;

@@ -201,7 +201,7 @@ namespace Xuanwu {
                 task(task) {
         }
 
-        ArrayBasePtr MakeArrayBase(size_t bytes);
+        ArrayBase* MakeArrayBase(size_t bytes);
 
         template<class T>
         DeviceArray<T>* MakeLocalMapping(Data<T> &d) {
@@ -213,7 +213,7 @@ namespace Xuanwu {
 
         template<class T>
         T *Alloc(size_t count) {
-            return std::static_pointer_cast<Array<T>>(MakeArrayBase(count * sizeof(T)))->data();
+            return static_cast<T*>(MakeArrayBase(count * sizeof(T))->data());
         }
 
         void Copy(Ptr dst, Ptr src, size_t bytes) override {
