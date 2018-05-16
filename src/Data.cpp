@@ -148,7 +148,7 @@ namespace Xuanwu {
                 return false;
             }
             assert(from->second.first->GetBytes() >= bytes_);
-            LG(DEBUG) << "DataImpl ReadAsync Copy :: " << *this << " -- " << from->second.first->GetPtr() << " to "
+            LG(INFO) << "DataImpl ReadAsync Copy :: " << *this << " -- " << from->second.first->GetPtr() << " to "
                       << arr->GetPtr() << " bytes=" << bytes_;
             Event event = worker->Copy(arr->GetPtr(), from->second.first->GetPtr(), bytes_);
             replicas.emplace(std::make_pair(dev, std::make_pair(std::move(arr), std::move(event))));
@@ -158,7 +158,7 @@ namespace Xuanwu {
 
         current_array_ = replicas[dev].first.get();
         assert(current_array_->GetBytes() >= bytes_);
-        LG(INFO) << "DataImpl ReadAsync Finish :: " << *this << " at " << *dev;
+        LG(DEBUG) << "DataImpl ReadAsync Finish :: " << *this << " at " << *dev;
         return replicas[dev].second->QueryFinished();
     }
 
@@ -169,7 +169,7 @@ namespace Xuanwu {
         for (auto it = replicas.begin(); it != replicas.end();) {
             if (it->first != dev) {
 //                invalids[it->first] = it->second.first;
-                LG(INFO) << "DataImpl WriteAsync :: erase " << *this << " at " << *it->first;
+                LG(DEBUG) << "DataImpl WriteAsync :: erase " << *this << " at " << *it->first;
                 it = replicas.erase(it);
             } else {
                 ++it;
@@ -181,10 +181,11 @@ namespace Xuanwu {
 //                worker->Copy(arr->GetPtr(), replicas.begin()->second->GetPtr(), bytes_);
 //                arr->CopyFromAsync(*replicas.begin()->second, worker);
             replicas.emplace(std::make_pair(dev, std::make_pair(std::move(arr), std::make_unique<EventDummy>())));
+            LG(INFO) << "DataImpl WriteAsync :: Create " << *this << " at " << dev;
         }
         current_array_ = replicas[dev].first.get();
         assert(current_array_->GetBytes() >= bytes_);
-        LG(INFO) << "DataImpl WriteAsync :: Finish" << *this << " at " << *dev;
+        LG(DEBUG) << "DataImpl WriteAsync :: Finish" << *this << " at " << *dev;
         return true;
     }
 
