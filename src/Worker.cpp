@@ -102,7 +102,7 @@ namespace Xuanwu {
             for (TaskPtr t : tasks) {
                 Clock clk;
 
-                LG(INFO) << *this << " Run " << *t;
+                LG(INFO) << *this << *t << " Run";
 
                 auto cputask = dynamic_cast<CPUTask *>(t.get());
                 if (!cputask)
@@ -112,7 +112,7 @@ namespace Xuanwu {
                 (*cputask)(CPUContext(cpu, this));
 
                 LG(INFO) << *this << " " << *t << " uses "
-                                     << clk.timeElapsed() << " seconds";
+                         << clk.timeElapsed() << " seconds";
             }
 
             lk.lock();
@@ -139,7 +139,7 @@ namespace Xuanwu {
     }
 
     void GPUWorker::RunTask(TaskPtr t) {
-        LG(INFO) << *this << " Run " << *t;
+        LG(INFO) << *this << *t << " Run ";
 
         auto gpu = dynamic_cast<GPUDevice *>(device_);
         assert(gpu);
@@ -196,11 +196,11 @@ namespace Xuanwu {
                         }
                         CLOG(DEBUG, "Worker") << "s22 " << m;
                     }
-                    CLOG(INFO, "Worker") << *this << " Prepare OK " << *t;
+                    CLOG(INFO, "Worker") << *this << *t << " Prepare OK ";
                     CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
                     (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, this, t));
                 } else {
-                    CLOG(ERROR, "Worker") << *this << " RunOld " << *t;
+                    CLOG(ERROR, "Worker") << *this << *t << " RunOld ";
                     CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
                     t->Run(this);
                 }

@@ -196,7 +196,7 @@ namespace Xuanwu {
         } else {
             ret = 1;
         }
-        LG(INFO) << "Data " << this << " " << *dev << " Read overhead = " << ret;
+        LG(DEBUG) << "Data " << *this << " " << *dev << " Read overhead = " << ret;
         return ret;
     }
 
