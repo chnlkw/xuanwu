@@ -87,9 +87,13 @@ namespace Xuanwu {
             }
             float score_overload = 10.0f / (1 + dev->NumRunningTasks());
             float score_dev_run_task = 1000 * dev->ScoreRunTask(t);
-            dev_score[dev.get()] = score_overhead + score_overload + score_dev_run_task;
-            LG(DEBUG) << *dev << " has score " << dev_score[dev.get()] <<
-                      "=" << score_overhead << "+" << score_overload << "+" << score_dev_run_task;
+            if (score_dev_run_task >= 0) {
+                dev_score.emplace(dev.get(), score_overhead + score_overload + score_dev_run_task);
+                LG(DEBUG) << *dev << " has score " << dev_score[dev.get()] << "=" << score_overhead << "+" << score_overload << "+" << score_dev_run_task;
+            } else {
+                LG(DEBUG) << *dev << " ignored because of score_dev_run_task = " << score_dev_run_task;
+
+            }
 //            LG(DEBUG) << *t << "is runnable on " << *dev;
         }
         assert(!dev_score.empty());
@@ -98,21 +102,31 @@ namespace Xuanwu {
                 if (auto dev = data_steps_[m.data->GetUID()].DeviceChosen()) {
                     LG(DEBUG) << *dev << " has been chosen by data " << m.data;
                     for (auto it = dev_score.begin(); it != dev_score.end();) {
-                        if (it->first != dev ) {
-                            LG(DEBUG) << *it->first << " has been erased by data " << m.data;
+                        if (it->first != dev) {
+                            LG(DEBUG) << *it->first << " has been erased by data " << *m.data;
                             it = dev_score.erase(it);
                         } else
                             ++it;
                     }
                 }
             }
-            if (m.data->device_pinned_ && m.data->device_pinned_strict_) {
-                for (auto it = dev_score.begin(); it != dev_score.end();) {
-                    if (it->first != m.data->device_pinned_) {
-                        LG(DEBUG) << *it->first << " has been erased because pinned " << m.data;
-                        it = dev_score.erase(it);
-                    } else
-                        ++it;
+            if (m.data->device_pinned_) {
+                if (m.data->device_pinned_strict_) {
+                    // if strict, erase other device score
+                    for (auto it = dev_score.begin(); it != dev_score.end();) {
+                        if (it->first != m.data->device_pinned_) {
+                            LG(DEBUG) << *it->first << " has been erased because pinned by " << *m.data;
+                            it = dev_score.erase(it);
+                        } else
+                            ++it;
+                    }
+                } else {
+                    for (auto &it : dev_score) {
+                        if (it.first != m.data->device_pinned_) {
+                            LG(DEBUG) << *it.first << " has been set to 0 by " << *m.data;
+                            it.second = 0;
+                        }
+                    }
                 }
             }
         }

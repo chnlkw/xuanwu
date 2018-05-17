@@ -138,11 +138,17 @@ namespace Xuanwu {
             return max_key_;
         }
 
-        const std::vector<DMR<TPar, TOff>> &GetDMR1() const { return dmr1_; }
+        auto &GetDMR1() { return dmr1_; }
 
-        const AlltoAllDMR &GetAlltoallDMR() const { return alltoall_; }
+        auto &GetAlltoallDMR() { return alltoall_; }
 
-        const std::vector<DMR<TKey, TOff>> &GetDMR3() const { return dmr3_; }
+        auto &GetDMR3() { return dmr3_; }
+
+        const auto &GetDMR1() const { return dmr1_; }
+
+        const auto &GetAlltoallDMR() const { return alltoall_; }
+
+        const auto &GetDMR3() const { return dmr3_; }
     };
 
     template<class TKey, class TOff, class ArrayConstructor>

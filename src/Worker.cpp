@@ -173,34 +173,37 @@ namespace Xuanwu {
                 if (gputask) {
                     for (auto it = meta.task_metas.begin(); it != meta.task_metas.end();) {
                         auto &m = *it;
-                        CLOG(DEBUG, "Worker") << "s11 " << m;
                         if (m.readable) {
-                            if (!m.data->ReadAsync(this, device_))
-                                return ret;
+                            if (!m.data->ReadAsync(this, device_)) {
+                                ++it;
+                                continue;
+                            }
                         }
                         if (m.writable && m.data->Bytes() > 0) {
-                            if (!m.data->WriteAsync(this, device_))
-                                return ret;
+                            if (!m.data->WriteAsync(this, device_)) {
+                                ++it;
+                                continue;
+                            }
                         }
-                        CLOG(DEBUG, "Worker") << "s12 " << m;
                         it = meta.task_metas.erase(it);
+                    }
+                    if (meta.task_metas.size()) {
+                        return ret;
                     }
                     // make sure data.currentarray is set to this device
                     for (auto &m : t->Metas()) {
-                        CLOG(DEBUG, "Worker") << "s21 " << m;
                         if (m.readable) {
                             while (!m.data->ReadAsync(this, device_));
                         }
                         if (m.writable && m.data->Bytes() > 0) {
                             while (!m.data->WriteAsync(this, device_));
                         }
-                        CLOG(DEBUG, "Worker") << "s22 " << m;
                     }
-                    CLOG(INFO, "Worker") << *this << *t << " Prepare OK ";
+                    CLOG(INFO, "Worker") << " " << *this << *t << " Prepare OK ";
                     CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
                     (*gputask)(GPUContext(GetDefaultMM(), gpu, stream_, this, t));
                 } else {
-                    CLOG(ERROR, "Worker") << *this << *t << " RunOld ";
+                    CLOG(ERROR, "Worker") << " " << *this << *t << " RunOld ";
                     CUDA_CALL(cudaEventRecord, meta.transfer_event, stream_);
                     t->Run(this);
                 }

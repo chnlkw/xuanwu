@@ -134,6 +134,18 @@ namespace Xuanwu {
             return size_;
         }
 
+        Vector<TOff> &GatherIndices() {
+            return gather_indices_;
+        }
+
+        Vector<TKey> &Keys() {
+            return reducer_keys_;
+        }
+
+        Vector<TOff> &Offs() {
+            return reducer_offs_;
+        }
+
         const Vector<TOff> &GatherIndices() const {
             return gather_indices_;
         }
