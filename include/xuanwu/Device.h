@@ -9,7 +9,20 @@
 #include "Config.h"
 
 namespace Xuanwu {
-    class CPUDevice : public DeviceBase {
+    namespace detail {
+        template <class T>
+        struct UID {
+            int uid;
+            UID() {
+                static int s_uid = 0;
+                uid = s_uid++;
+            }
+
+            auto ID() { return uid; }
+
+        };
+    }
+    class CPUDevice : public DeviceBase, public detail::UID<CPUDevice> {
     public:
 
         CPUDevice();

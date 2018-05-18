@@ -2,7 +2,16 @@ cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 project(xuanwu LANGUAGES CXX CUDA)
 
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
+
 find_package(CUDA)
+
+find_package(NUMA)
+
+if (NUMA_FOUND)
+    add_definitions(-DNUMA)
+    message("add -DNUMA")
+endif ()
 
 #enable_language(CUDA)
 

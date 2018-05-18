@@ -18,7 +18,7 @@ namespace Xuanwu {
         }
 
         template<class It>
-        auto &ChooseRunnable(It beg, It end) {
+        static auto &ChooseRunnable(It beg, It end) {
             assert(beg != end);
             It ret;
             size_t best = std::numeric_limits<size_t>::max();

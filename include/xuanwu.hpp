@@ -14,4 +14,8 @@
 #include <xuanwu/Worker.h>
 #include <xuanwu/Xuanwu.h>
 
+#ifdef NUMA
+#include <xuanwu/numas/numas.h>
+#endif
+
 #endif //LDA_ALL_H

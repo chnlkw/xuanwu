@@ -82,7 +82,11 @@ int main(int argc, char **argv) {
 
     auto injector = di::make_injector(
             di::bind<>.to(GPUDevice::NumWorkers{4}),
+#ifdef NUMA
+            di::bind<AllocatorFactory<CPUDevice>>().to<NumaAllocatorFactory<CudaHostAllocator>>(),
+#else
             di::bind<AllocatorFactory<CPUDevice>>().to<CudaHostAllocatorFactory>(),
+#endif
 //            di::bind<AllocatorFactory<GPUDevice>>().to<CudaAllocatorFactory>(),
             di::bind<AllocatorFactory<GPUDevice>>().to<PreAllocatorFactory<CudaAllocatorFactory>>(),
             di::bind<>.to(PreAllocatorFactory<CudaAllocatorFactory>::Space{gpu_memory}),
