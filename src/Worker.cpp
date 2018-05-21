@@ -193,10 +193,15 @@ namespace Xuanwu {
                     // make sure data.currentarray is set to this device
                     for (auto &m : t->Metas()) {
                         if (m.readable) {
-                            while (!m.data->ReadAsync(this, device_));
+                            while (!m.data->ReadAsync(this, device_)) {
+                                CLOG(INFO, "Worker") << " unexpected wait" << *m.data;
+
+                            }
                         }
                         if (m.writable && m.data->Bytes() > 0) {
-                            while (!m.data->WriteAsync(this, device_));
+                            while (!m.data->WriteAsync(this, device_)) {
+                                CLOG(INFO, "Worker") << " unexpected wait" << *m.data;
+                            }
                         }
                     }
                     CLOG(INFO, "Worker") << " " << *this << *t << " Prepare OK ";
@@ -292,6 +297,7 @@ namespace Xuanwu {
     Event GPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
         auto gpu = dynamic_cast<GPUDevice *>(device_);
         assert(gpu);
+        LG(INFO)<< *this << " copy " << src << " to " << dst << " bytes=" << bytes;
         return GPUCopy(dst, src, bytes, gpu->GPUID(), stream_);
     }
 
