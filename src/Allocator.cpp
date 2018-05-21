@@ -84,7 +84,12 @@ namespace Xuanwu {
         if (off + size > size_) {
             std::ostringstream os;
             os << "PreAllocator :: not enough memory when allocating " << bytes_to_str(size) << " remain "
-               << bytes_to_str(size_ - allocated_) << " total " << bytes_to_str(size_);
+               << bytes_to_str(size_ - allocated_) << " total " << bytes_to_str(size_) << '\n';
+            os << "\tallocated are:\n";
+            for (auto p : m_) {
+                os << "\t\t" << ptr_ + p.first << " " << p.second << '\n';
+            }
+
             LG(FATAL) << os.str() << "\n" << el::base::debug::StackTrace();
             throw std::runtime_error(os.str().c_str());
         }

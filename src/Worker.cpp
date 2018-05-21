@@ -83,6 +83,7 @@ namespace Xuanwu {
     }
 
     Event CPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
+        LG(INFO)<< *this << " copy " << src << " to " << dst << " bytes=" << bytes;
         return CPUCopy(dst, src, bytes, stream_);
     }
 
@@ -216,8 +217,13 @@ namespace Xuanwu {
                 meta.step++;
             }
             if (meta.step == 2) {
-                if (!QueryEvent(meta.end_event))
+                auto err = cudaEventQuery(meta.end_event);
+                if (err == cudaErrorNotReady)
                     return ret;
+                if (err != cudaSuccess) {
+                    LOG(ERROR) << "run " << *t << " Error code = " << cudaGetErrorString(cudaGetLastError());
+                    CUDA_CHECK();
+                }
 
                 float tranfer_ms, calc_ms;
                 CUDA_CALL(cudaEventElapsedTime, &tranfer_ms, meta.beg_event, meta.transfer_event);
