@@ -140,7 +140,7 @@ namespace Xuanwu {
 //            for (auto &r : replicas) {
                 int copy_speed = CopySpeed(arr->GetPtr(), it->second.first->GetPtr());
                 if (!it->second.second->QueryFinished())
-                    copy_speed *= 2;
+                    copy_speed /= 2;
                 if (max_copy_speed < copy_speed) {
                     max_copy_speed = copy_speed;
                     from = it;

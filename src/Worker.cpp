@@ -164,11 +164,11 @@ namespace Xuanwu {
             if (meta.step == 0) {
                 CUDA_CALL(cudaEventRecord, meta.beg_event, stream_);
                 meta.step++;
-                CLOG(DEBUG, "Worker") << *this << " timer_started " << t << " " << *t;
+                CLOG(DEBUG, "Worker") << *this << " timer_started " << " " << *t;
             }
 
             if (meta.step == 1) {
-                CLOG(DEBUG, "Worker") << *this << " try prepare data " << t << " " << *t;
+                CLOG(DEBUG, "Worker") << *this << " try prepare data "  << " " << *t;
                 auto gputask = dynamic_cast<GPUTask *>(t.get());
                 if (!gputask)
                     gputask = t->GetGPUTask();
@@ -187,6 +187,7 @@ namespace Xuanwu {
                                 continue;
                             }
                         }
+                        CLOG(DEBUG, "Worker") << *this << " prepared "  << *m.data;
                         it = meta.task_metas.erase(it);
                     }
                     if (meta.task_metas.size()) {
