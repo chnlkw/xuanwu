@@ -26,6 +26,7 @@ namespace {
 namespace Xuanwu {
 
     void CPUWorker::RunTask(TaskPtr t) {
+        LG(INFO) << *this << " Run Task " << *t;
 //        {
 //            std::unique_lock<std::mutex> lk(m_);
         tasks_.push_back(t);
@@ -57,7 +58,7 @@ namespace Xuanwu {
                             return false;
                     }
                 }
-                LG(INFO) << "CPUWorker Prepare OK " << *t;
+                LG(INFO) << *this << " Prepare OK " << *t;
                 {
                     std::unique_lock<std::mutex> lk(m_);
                     running_tasks_.push_back(t);

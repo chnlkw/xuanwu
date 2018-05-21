@@ -139,6 +139,8 @@ namespace Xuanwu {
             for (auto it = replicas.begin(); it != replicas.end(); ++it) {
 //            for (auto &r : replicas) {
                 int copy_speed = CopySpeed(arr->GetPtr(), it->second.first->GetPtr());
+                if (!it->second.second->QueryFinished())
+                    copy_speed *= 2;
                 if (max_copy_speed < copy_speed) {
                     max_copy_speed = copy_speed;
                     from = it;
@@ -149,7 +151,7 @@ namespace Xuanwu {
             }
             assert(from->second.first->GetBytes() >= bytes_);
             LG(INFO) << "DataImpl ReadAsync Copy :: " << *this << " -- " << from->second.first->GetPtr() << " to "
-                      << arr->GetPtr() << " bytes=" << bytes_;
+                     << arr->GetPtr() << " bytes=" << bytes_;
             Event event = worker->Copy(arr->GetPtr(), from->second.first->GetPtr(), bytes_);
             replicas.emplace(std::make_pair(dev, std::make_pair(std::move(arr), std::move(event))));
         }
@@ -232,7 +234,7 @@ namespace Xuanwu {
         LG(DEBUG) << "DataImpl Create : " << *this << " " << *dev << " bytes=" << bytes;
     }
 
-    ArrayBase* DataImpl::CurrentArray() const {
+    ArrayBase *DataImpl::CurrentArray() const {
         return current_array_;
     }
 }

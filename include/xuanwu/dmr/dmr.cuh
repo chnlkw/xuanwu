@@ -43,13 +43,6 @@ namespace Xuanwu {
         task->AddOutput(dst);
         AddTask(task);
 
-        TaskPtr task_clean(new TaskBase(
-                "clean_dmr",
-                std::make_unique<CPUTask>([=](CPUContext cpu)mutable {
-                }),
-                {}));
-        task_clean->AddOutput(idx);
-        AddTask(task_clean);
     }
 
 }

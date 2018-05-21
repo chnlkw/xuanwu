@@ -41,13 +41,15 @@ namespace Xuanwu {
 
     CPUDevice::CPUDevice() :
             DeviceBase() {
-        workers_.emplace_back(new CPUWorker(*this));
+        for (int i = 0; i < 4; i++)
+            workers_.emplace_back(new CPUWorker(*this));
         LG(INFO) << "Create CPUDevice " << this << " num_workers = " << workers_.size();
     }
 
     void CPUDevice::RunTask(TaskPtr t) {
         LG(INFO) << "CPUDevice run task " << *t;
-        workers_.at(0)->RunTask(t);
+        ChooseRunnable(workers_.begin(), workers_.end())->RunTask(t);
+//        workers_.at(0)->RunTask(t);
     }
 
     int DeviceBase::ScoreRunTask(TaskPtr t) {
