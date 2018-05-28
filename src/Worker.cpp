@@ -47,17 +47,18 @@ namespace Xuanwu {
             if (!cputask)
                 cputask = t->GetCPUTask();
             if (cputask) {
-                for (auto &m : t->Metas()) {
-                    if (m.readable) {
-                        if (!m.data->ReadAsync(this, device_))
-                            return false;
+                for (auto &m : t->Metas())
+                    if (!m.remote) {
+                        if (m.readable) {
+                            if (!m.data->ReadAsync(this, device_))
+                                return false;
 
+                        }
+                        if (m.writable && m.data->Bytes() > 0) {
+                            if (!m.data->WriteAsync(this, device_))
+                                return false;
+                        }
                     }
-                    if (m.writable && m.data->Bytes() > 0) {
-                        if (!m.data->WriteAsync(this, device_))
-                            return false;
-                    }
-                }
                 LG(INFO) << *this << " Prepare OK " << *t;
                 {
                     std::unique_lock<std::mutex> lk(m_);
@@ -84,7 +85,7 @@ namespace Xuanwu {
     }
 
     Event CPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
-        LG(INFO)<< *this << " copy " << src << " to " << dst << " bytes=" << bytes;
+        LG(INFO) << *this << " copy " << src << " to " << dst << " bytes=" << bytes;
         return CPUCopy(dst, src, bytes, stream_);
     }
 
@@ -168,14 +169,14 @@ namespace Xuanwu {
             }
 
             if (meta.step == 1) {
-                CLOG(DEBUG, "Worker") << *this << " try prepare data "  << " " << *t;
+                CLOG(DEBUG, "Worker") << *this << " try prepare data " << " " << *t;
                 auto gputask = dynamic_cast<GPUTask *>(t.get());
                 if (!gputask)
                     gputask = t->GetGPUTask();
                 if (gputask) {
                     for (auto it = meta.task_metas.begin(); it != meta.task_metas.end();) {
                         auto &m = *it;
-                        if (m.readable) {
+                        if (m.readable && !m.remote) {
                             if (!m.data->ReadAsync(this, device_)) {
                                 ++it;
                                 continue;
@@ -187,7 +188,7 @@ namespace Xuanwu {
                                 continue;
                             }
                         }
-                        CLOG(DEBUG, "Worker") << *this << " prepared "  << *m.data;
+                        CLOG(DEBUG, "Worker") << *this << " prepared " << *m.data;
                         it = meta.task_metas.erase(it);
                     }
                     if (meta.task_metas.size()) {
@@ -195,7 +196,7 @@ namespace Xuanwu {
                     }
                     // make sure data.currentarray is set to this device
                     for (auto &m : t->Metas()) {
-                        if (m.readable) {
+                        if (m.readable && !m.remote) {
                             while (!m.data->ReadAsync(this, device_)) {
                                 CLOG(INFO, "Worker") << " unexpected wait" << *m.data;
 
@@ -305,7 +306,7 @@ namespace Xuanwu {
     Event GPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
         auto gpu = dynamic_cast<GPUDevice *>(device_);
         assert(gpu);
-        LG(INFO)<< *this << " copy " << src << " to " << dst << " bytes=" << bytes;
+        LG(INFO) << *this << " copy " << src << " to " << dst << " bytes=" << bytes;
         return GPUCopy(dst, src, bytes, gpu->GPUID(), stream_);
     }
 

@@ -11,30 +11,31 @@
 namespace Xuanwu {
     class MMBase {
     public:
-        virtual AllocatorPtr GetAllocatorByDevice(DevicePtr device) = 0;
-
         virtual DataBasePtr MakeDataBase(size_t size) = 0;
 
         virtual ~MMBase() {}
 
         template<class T>
-        Data<T> MakeData(size_t count) {
+        Data <T> MakeData(size_t count) {
             return Data<T>(count, this);
         }
 
-        template<class T>
-        Array<T> MakeArray(size_t count, DevicePtr device) {
-            return Array<T>(GetAllocatorByDevice(device), count);
-        }
     };
 
     class MMImpl : public MMBase {
         std::map<DevicePtr, std::unique_ptr<AllocatorBase>> allocator_pool_;
 
     public:
+        virtual AllocatorPtr GetAllocatorByDevice(DevicePtr device) = 0;
+
         AllocatorPtr GetFrom(AllocatorFactoryBase *factory, DevicePtr dev);
 
         DataBasePtr MakeDataBase(size_t size) override;
+//
+//        template<class T>
+//        Array <T> MakeArray(size_t count, DevicePtr device) {
+//            return Array<T>(GetAllocatorByDevice(device), count);
+//        }
     };
 
     template<class ...Devices>
@@ -54,10 +55,13 @@ namespace Xuanwu {
 
         AllocatorFactoryPtr allocator_factory_;
 
-        MMMultiDevice(std::shared_ptr<AllocatorFactory<Device>> allocator_factory,
-                      std::shared_ptr<AllocatorFactory<Devices>>... args) :
-                MMMultiDevice<Devices...>(args...),
-                allocator_factory_(allocator_factory) {
+        MMMultiDevice(std::shared_ptr<AllocatorFactory < Device>>
+
+        allocator_factory,
+        std::shared_ptr<AllocatorFactory < Devices>>... args) :
+
+        MMMultiDevice<Devices...>(args...),
+        allocator_factory_(allocator_factory) {
         }
 
         AllocatorPtr GetAllocatorByDevice(DevicePtr device) override {
@@ -66,6 +70,10 @@ namespace Xuanwu {
             }
             return MMMultiDevice<Devices...>::GetAllocatorByDevice(device);
         }
+
+    };
+
+    class MMUnified : public MMBase {
 
     };
 }

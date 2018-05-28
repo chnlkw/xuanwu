@@ -32,11 +32,13 @@ namespace Xuanwu {
             DataBasePtr data;
             bool readable = false;
             bool writable = false;
+            bool remote = false; // can remote access without migration
 
-            Meta(DataBasePtr d, bool readable, bool writable) :
+            Meta(DataBasePtr d, bool readable, bool writable, bool remote) :
                     data(std::move(d)),
                     readable(readable),
-                    writable(writable) {}
+                    writable(writable),
+                    remote(remote) {}
 
 //            bool operator<(const Meta &that) const {
 //                return priority > that.priority;
@@ -44,10 +46,11 @@ namespace Xuanwu {
 
             void log(el::base::type::ostream_t &os) const override;
         };
+
     private:
 
         std::vector<Meta> metas_;
-        std::vector<ArrayBasePtr> tmp_arrays_;
+        std::vector<DataBasePtr> tmp_datas_;
         std::vector<std::pair<LocalArrayGPU, DataBasePtr>> tmp_data_mapping_;
         bool finished = false;
 
@@ -87,6 +90,8 @@ namespace Xuanwu {
 
         TaskBase(std::string name, std::unique_ptr<CPUTask> cputask, std::unique_ptr<GPUTask> gputask);
 
+        void AddInputRemote(DataBasePtr data);
+
         void AddInput(DataBasePtr data);
 
         void AddInputs(std::vector<DataBasePtr> data);
@@ -99,11 +104,11 @@ namespace Xuanwu {
 
         void AddInOutputs(std::vector<DataBasePtr> data);
 
-        void AddTempArray(ArrayBasePtr arr);
+        void AddTempData(DataBasePtr data);
 
         void AddTempDataMapping(LocalArrayGPU, DataBasePtr);
 
-        auto& GetTempDataMappings() { return tmp_data_mapping_; }
+        auto &GetTempDataMappings() { return tmp_data_mapping_; }
 
         void Finish();
 
@@ -111,6 +116,7 @@ namespace Xuanwu {
 
         GPUTask *GetGPUTask() const;
     };
+
     struct Context {
         virtual void Copy(Ptr dst, Ptr src, size_t bytes) = 0;
 
@@ -120,7 +126,7 @@ namespace Xuanwu {
         CPUDevice *dev;
         CPUWorker *worker;
 
-        CPUContext(CPUDevice *dev, CPUWorker* worker) : dev(dev), worker(worker) {}
+        CPUContext(CPUDevice *dev, CPUWorker *worker) : dev(dev), worker(worker) {}
 
         void Copy(Ptr dst, Ptr src, size_t bytes) override;
     };
@@ -128,6 +134,7 @@ namespace Xuanwu {
     struct DeviceArrayBase {
         void *ptr;
         size_t bytes;
+
         __device__
         void Malloc(size_t b) {
             bytes = b;
@@ -162,7 +169,7 @@ namespace Xuanwu {
 
     struct LocalArrayGPU {
 
-        DeviceArrayBase* d_arr = nullptr;
+        DeviceArrayBase *d_arr = nullptr;
 
         LocalArrayGPU() = default;
 
@@ -176,11 +183,12 @@ namespace Xuanwu {
         }
 
     };
+
     template<class T>
     struct LocalArray : LocalArrayGPU {
 
         DeviceArray<T> *GetArrPtr() {
-            return static_cast<DeviceArray<T>*>(d_arr);
+            return static_cast<DeviceArray<T> *>(d_arr);
 //        return thrust::raw_pointer_cast(arr.data());
         }
 
@@ -193,7 +201,7 @@ namespace Xuanwu {
         GPUWorker *worker;
         TaskPtr task;
 
-        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, GPUWorker* worker, TaskPtr task) :
+        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, GPUWorker *worker, TaskPtr task) :
                 mm(mm),
                 dev(dev),
                 stream(stream),
@@ -201,10 +209,10 @@ namespace Xuanwu {
                 task(task) {
         }
 
-        ArrayBase* MakeArrayBase(size_t bytes);
+        ArrayBase *MakeArrayBase(size_t bytes);
 
         template<class T>
-        DeviceArray<T>* MakeLocalMapping(Data<T> &d) {
+        DeviceArray<T> *MakeLocalMapping(Data<T> &d) {
             LocalArray<T> g;
             g.Create();
             task->AddTempDataMapping(g, d);
@@ -213,7 +221,7 @@ namespace Xuanwu {
 
         template<class T>
         T *Alloc(size_t count) {
-            return static_cast<T*>(MakeArrayBase(count * sizeof(T))->data());
+            return static_cast<T *>(MakeArrayBase(count * sizeof(T))->data());
         }
 
         void Copy(Ptr dst, Ptr src, size_t bytes) override {

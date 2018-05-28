@@ -200,7 +200,8 @@ namespace Xuanwu {
 //    std::copy(src.begin() + src_off, src.begin() + src_off + count, dst.begin() + dst_off);
 
         TaskPtr task(new TaskBase("Copy", std::move(cputask), std::move(gputask)));
-        task->AddInput(src);
+        task->AddInputRemote(src);
+//        task->AddInput(src);
         task->AddOutput(dst);
         AddTask(task);
 

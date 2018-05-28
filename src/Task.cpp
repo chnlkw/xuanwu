@@ -26,9 +26,14 @@ namespace Xuanwu {
         LG(INFO) << "Create " << Name();
     }
 
+    void TaskBase::AddInputRemote(DataBasePtr data) {
+        LG(INFO) << "AddInputRemote " << *data;
+        metas_.emplace_back(data, true, false, true);
+    }
+
     void TaskBase::AddInput(DataBasePtr data) {
         LG(INFO) << "AddInput " << *data;
-        metas_.emplace_back(data, true, false);
+        metas_.emplace_back(data, true, false, false);
     }
 
     void TaskBase::AddInputs(std::vector<DataBasePtr> data) {
@@ -38,7 +43,7 @@ namespace Xuanwu {
 
     void TaskBase::AddOutput(DataBasePtr data) {
         LG(INFO) << "AddOutput " << *data;
-        metas_.emplace_back(data, false, true);
+        metas_.emplace_back(data, false, true, false);
     }
 
     void TaskBase::AddOutputs(std::vector<DataBasePtr> data) {
@@ -48,7 +53,7 @@ namespace Xuanwu {
 
     void TaskBase::AddInOutput(DataBasePtr data) {
         LG(INFO) << "AddInOutput " << *data;
-        metas_.emplace_back(data, true, true);
+        metas_.emplace_back(data, true, true, false);
     }
 
     void TaskBase::AddInOutputs(std::vector<DataBasePtr> data) {
@@ -57,7 +62,7 @@ namespace Xuanwu {
     }
 
     void TaskBase::Finish() {
-        tmp_arrays_.clear();
+        tmp_datas_.clear();
         finished = true;
     }
 
@@ -69,19 +74,19 @@ namespace Xuanwu {
         return finished;
     }
 
-    void TaskBase::AddTempArray(ArrayBasePtr arr) {
-        tmp_arrays_.push_back(std::move(arr));
+    void TaskBase::AddTempData(DataBasePtr data) {
+        tmp_datas_.push_back(std::move(data));
     }
 
     void TaskBase::AddTempDataMapping(LocalArrayGPU arr, DataBasePtr d) {
         tmp_data_mapping_.emplace_back(arr, d);
     }
 
-    ArrayBase* GPUContext::MakeArrayBase(size_t bytes) {
-        auto arr = std::make_unique<ArrayBase>(bytes, mm->GetAllocatorByDevice(dev));
-        auto ret = arr.get();
-        task->AddTempArray(std::move(arr));
-        return ret;
+    ArrayBase *GPUContext::MakeArrayBase(size_t bytes) {
+        auto data = mm->MakeDataBase(bytes);// std::make_unique<ArrayBase>(bytes, mm->GetAllocatorByDevice(dev));
+        data->Create(bytes, dev);
+        task->AddTempData(data);
+        return data->CurrentArray();
     }
 
     void CPUContext::Copy(Ptr dst, Ptr src, size_t bytes) {
