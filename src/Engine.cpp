@@ -178,12 +178,14 @@ namespace Xuanwu {
             else if (m.writable)
                 f = Flag::Write;
 
-            const auto &depend_tasks = data_steps_[m.data->GetUID()].RegisterTask(task, f);
-            for (const auto &depend_task : depend_tasks) {
+            task->AddDependency(data_steps_[m.data->GetUID()].RegisterTask(task, f));
+            for (const auto &depend_task_w : task->DependTasks()) {
 //                if (!depend_task.expired())
 //                    AddEdge(depend_task.lock(), task);
-                LG(INFO) << "AddEdge " << *depend_task << " -> " << *task << " " << *m.data;
-                AddEdge(depend_task, task);
+                if (auto depend_task = depend_task_w.lock()) {
+                    LG(INFO) << "AddEdge " << *depend_task << " -> " << *task << " " << *m.data;
+                    AddEdge(depend_task, task);
+                }
             }
         }
         CheckTaskReady(task);

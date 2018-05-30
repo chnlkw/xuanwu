@@ -116,6 +116,10 @@ namespace Xuanwu {
             depend_tasks_.insert(depend_tasks_.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
         }
 
+        const auto &DependTasks() const {
+            return depend_tasks_;
+        }
+
         void Finish();
 
         CPUTask *GetCPUTask() const;

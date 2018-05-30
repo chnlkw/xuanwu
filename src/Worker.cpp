@@ -49,7 +49,7 @@ namespace Xuanwu {
             if (cputask) {
                 for (auto &m : t->Metas())
                     if (!m.remote) {
-                        if (m.readable) {
+                        if (m.readable && !m.remote) {
                             if (!m.data->ReadAsync(this, device_))
                                 return false;
 

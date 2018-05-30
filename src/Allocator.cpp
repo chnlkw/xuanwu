@@ -90,7 +90,6 @@ namespace Xuanwu {
                 os << "\t\t" << ptr_ + p.first << " " << p.second << '\n';
             }
 
-            LG(FATAL) << os.str() << "\n" << el::base::debug::StackTrace();
             throw std::runtime_error(os.str().c_str());
         }
         m_.emplace(off, size);
