@@ -62,6 +62,8 @@ namespace Xuanwu {
         std::unique_ptr<CPUTask> cputask_;
         std::unique_ptr<GPUTask> gputask_;
 
+        std::vector<std::weak_ptr<TaskBase>> depend_tasks_;
+
     public:
         ~TaskBase() override;
 
@@ -109,6 +111,10 @@ namespace Xuanwu {
         void AddTempDataMapping(LocalArrayGPU, DataBasePtr);
 
         auto &GetTempDataMappings() { return tmp_data_mapping_; }
+
+        void AddDependency(std::vector<TaskPtr> tasks) {
+            depend_tasks_.insert(depend_tasks_.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
+        }
 
         void Finish();
 

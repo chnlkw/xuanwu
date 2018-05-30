@@ -7,7 +7,7 @@ if (NUMA_FOUND)
     message("SRC_FILES ${SRC_FILES}")
 endif ()
 
-add_library(xuanwu ${SRC_FILES} numas/NumaWorker.cpp ../include/xuanwu/numas/NumaWorker.h)
+add_library(xuanwu ${SRC_FILES})
 target_link_libraries(xuanwu cuda_utils easyloggingpp)
 
 if (NUMA_FOUND)
