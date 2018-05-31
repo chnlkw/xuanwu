@@ -65,7 +65,7 @@ namespace Xuanwu {
             return false;
         }
 
-        std::sort(ready_tasks_.begin(), ready_tasks_.end(), [](auto &a, auto &b) { return a->Seq() < b->Seq(); });
+//        std::sort(ready_tasks_.begin(), ready_tasks_.end(), [](auto &a, auto &b) { return a->Seq() < b->Seq(); });
         for (auto it = ready_tasks_.begin(); it != ready_tasks_.end();) {
             RunTask(*it);
             it = ready_tasks_.erase(it);
@@ -89,7 +89,8 @@ namespace Xuanwu {
             float score_dev_run_task = 1000 * dev->ScoreRunTask(t);
             if (score_dev_run_task >= 0) {
                 dev_score.emplace(dev.get(), score_overhead + score_overload + score_dev_run_task);
-                LG(DEBUG) << *dev << " has score " << dev_score[dev.get()] << "=" << score_overhead << "+" << score_overload << "+" << score_dev_run_task;
+                LG(DEBUG) << *dev << " has score " << dev_score[dev.get()] << "=" << score_overhead << "+"
+                          << score_overload << "+" << score_dev_run_task;
             } else {
                 LG(DEBUG) << *dev << " ignored because of score_dev_run_task = " << score_dev_run_task;
 
@@ -179,13 +180,13 @@ namespace Xuanwu {
                 f = Flag::Write;
 
             task->AddDependency(data_steps_[m.data->GetUID()].RegisterTask(task, f));
-            for (const auto &depend_task_w : task->DependTasks()) {
+        }
+        for (const auto &depend_task_w : task->DependTasks()) {
 //                if (!depend_task.expired())
 //                    AddEdge(depend_task.lock(), task);
-                if (auto depend_task = depend_task_w.lock()) {
-                    LG(INFO) << "AddEdge " << *depend_task << " -> " << *task << " " << *m.data;
-                    AddEdge(depend_task, task);
-                }
+            if (auto depend_task = depend_task_w.lock()) {
+                LG(INFO) << "AddEdge " << *depend_task << " -> " << *task;
+                AddEdge(depend_task, task);
             }
         }
         CheckTaskReady(task);

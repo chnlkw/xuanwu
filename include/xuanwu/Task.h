@@ -125,6 +125,10 @@ namespace Xuanwu {
         CPUTask *GetCPUTask() const;
 
         GPUTask *GetGPUTask() const;
+
+        std::string& Name() {
+            return name_;
+        }
     };
 
     struct Context {

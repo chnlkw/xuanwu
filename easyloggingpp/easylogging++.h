@@ -2,6 +2,7 @@
 #define ELPP_FEATURE_CRASH_LOG
 #define ELPP_FEATURE_PERFORMANCE_TRACKING
 #define ELPP_STL_LOGGING
+#define ELPP_FRESH_LOG_FILE
 
 //
 //  Bismillah ar-Rahmaan ar-Raheem
