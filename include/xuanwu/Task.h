@@ -94,6 +94,12 @@ namespace Xuanwu {
 
         void AddInputRemote(DataBasePtr data);
 
+        void AddRemoteInputs(std::vector<DataBasePtr> data);
+
+        void AddOutputRemote(DataBasePtr data);
+
+        void AddRemoteOutputs(std::vector<DataBasePtr> data);
+
         void AddInput(DataBasePtr data);
 
         void AddInputs(std::vector<DataBasePtr> data);
@@ -113,7 +119,8 @@ namespace Xuanwu {
         auto &GetTempDataMappings() { return tmp_data_mapping_; }
 
         void AddDependency(std::vector<TaskPtr> tasks) {
-            depend_tasks_.insert(depend_tasks_.end(), std::make_move_iterator(tasks.begin()), std::make_move_iterator(tasks.end()));
+            depend_tasks_.insert(depend_tasks_.end(), std::make_move_iterator(tasks.begin()),
+                                 std::make_move_iterator(tasks.end()));
         }
 
         const auto &DependTasks() const {
@@ -126,7 +133,7 @@ namespace Xuanwu {
 
         GPUTask *GetGPUTask() const;
 
-        std::string& Name() {
+        std::string &Name() {
             return name_;
         }
     };

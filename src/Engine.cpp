@@ -111,7 +111,7 @@ namespace Xuanwu {
                     }
                 }
             }
-            if (m.data->device_pinned_) {
+            if (m.data->device_pinned_ && !m.remote) {
                 if (m.data->device_pinned_strict_) {
                     // if strict, erase other device score
                     for (auto it = dev_score.begin(); it != dev_score.end();) {
@@ -131,7 +131,11 @@ namespace Xuanwu {
                 }
             }
         }
-        assert(!dev_score.empty());
+        if (dev_score.empty()) {
+            LOG(FATAL) << "no device avaliable to run " << *t;
+            assert(!dev_score.empty());
+            abort();
+        }
         DevicePtr dev_chosen = std::max_element(dev_score.begin(), dev_score.end(),
                                                 [](auto a, auto b) { return a.second < b.second; })->first;
 //    return ChooseRunnable(devices_.begin(), devices_.end()).get();

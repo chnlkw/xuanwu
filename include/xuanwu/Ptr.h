@@ -18,14 +18,14 @@ namespace Xuanwu {
             CPU, GPU
         };
 
-        Ptr(void *ptr, Type type = Type::CPU) : ptr_(ptr), type_(type) {}
+        explicit Ptr(void *ptr, Type type = Type::CPU) : ptr_(ptr), type_(type) {}
 
         virtual void *RawPtr() {
             return ptr_;
         }
 
         Ptr operator+(ssize_t d) {
-            return {(char *) ptr_ + d, type_};
+            return Ptr{(char *) ptr_ + d, type_};
         }
 
         operator void *() const {

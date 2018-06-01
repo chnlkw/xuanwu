@@ -31,6 +31,21 @@ namespace Xuanwu {
         metas_.emplace_back(data, true, false, true);
     }
 
+    void TaskBase::AddRemoteInputs(std::vector<DataBasePtr> data) {
+        for (auto &d : data)
+            AddInputRemote(d);
+    }
+
+    void TaskBase::AddOutputRemote(DataBasePtr data) {
+        LG(INFO) << "AddInputRemote " << *data;
+        metas_.emplace_back(data, false, true, true);
+    }
+
+    void TaskBase::AddRemoteOutputs(std::vector<DataBasePtr> data) {
+        for (auto &d : data)
+            AddOutputRemote(d);
+    }
+
     void TaskBase::AddInput(DataBasePtr data) {
         LG(INFO) << "AddInput " << *data;
         metas_.emplace_back(data, true, false, false);

@@ -54,7 +54,7 @@ namespace Xuanwu {
                                 return false;
 
                         }
-                        if (m.writable && m.data->Bytes() > 0) {
+                        if (m.writable && m.data->Bytes() > 0 && !m.remote) {
                             if (!m.data->WriteAsync(this, device_))
                                 return false;
                         }
@@ -182,7 +182,7 @@ namespace Xuanwu {
                                 continue;
                             }
                         }
-                        if (m.writable && m.data->Bytes() > 0) {
+                        if (m.writable && m.data->Bytes() > 0 && !m.remote) {
                             if (!m.data->WriteAsync(this, device_)) {
                                 ++it;
                                 continue;
@@ -202,7 +202,7 @@ namespace Xuanwu {
 
                             }
                         }
-                        if (m.writable && m.data->Bytes() > 0) {
+                        if (m.writable && m.data->Bytes() > 0 && !m.remote) {
                             while (!m.data->WriteAsync(this, device_)) {
                                 CLOG(INFO, "Worker") << " unexpected wait" << *m.data;
                             }
@@ -249,7 +249,6 @@ namespace Xuanwu {
                     for (size_t i = 0; i < mappings.size(); i++) {
                         auto &tmp_arr = mappings[i].first;
                         auto &data = mappings[i].second;
-                        meta.tmp_arrs.emplace_back();
                         CUDA_CALL(cudaMemcpyAsync, &meta.tmp_arrs[i], tmp_arr.GetArrPtr(), sizeof(DeviceArrayBase),
                                   cudaMemcpyDefault,
                                   stream_);
