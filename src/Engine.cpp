@@ -49,7 +49,8 @@ namespace Xuanwu {
         if (src->finished)
             return;
         tasks_[src].next_tasks_.push_back(dst);
-        tasks_[dst].in_degree++;
+        tasks_[dst].unfinished_depend_tasks_++;
+        tasks_[dst].nostart_depend_tasks_++;
     }
 
     bool Engine::Tick() {
@@ -66,9 +67,11 @@ namespace Xuanwu {
         }
 
 //        std::sort(ready_tasks_.begin(), ready_tasks_.end(), [](auto &a, auto &b) { return a->Seq() < b->Seq(); });
-        for (auto it = ready_tasks_.begin(); it != ready_tasks_.end();) {
-            RunTask(*it);
-            it = ready_tasks_.erase(it);
+        while (ready_tasks_.size()) {
+            auto ready_tasks = std::move(ready_tasks_);
+            ready_tasks_.clear();
+            for (auto &t : ready_tasks)
+                RunTask(t);
         }
         ticking = false;
         return true;
@@ -145,20 +148,54 @@ namespace Xuanwu {
                 data_steps_[m.data->GetUID()].ChooseDevice(dev_chosen);
             }
         }
+
+        tasks_[t].device_chosen_ = dev_chosen;
+        for (auto &nxt : tasks_[t].next_tasks_) {
+            tasks_[nxt].devices_of_depend_tasks_.insert(dev_chosen);
+        }
+
         return dev_chosen;
     }
 
-    void Engine::CheckTaskReady(TaskPtr task) {
-        if (tasks_[task].in_degree == 0) {
+    void Engine::CheckTaskReady(const TaskPtr &task) {
+        auto &node = tasks_[task];
+        if (node.device_chosen_)
+            return;
+        if (node.nostart_depend_tasks_ == 0 && node.devices_of_depend_tasks_.size() <= 1) {
+            DevicePtr dev = ChooseDevice(task);
+            node.devices_of_depend_tasks_.insert(dev);
+            if (node.devices_of_depend_tasks_.size() <= 1) {
+                node.device_chosen_ = dev;
+                ready_tasks_.push_back(task);
+                LG(INFO) << *task << " is ready to run at " << *node.device_chosen_ << " because of locality";
+            } else {
+                LG(DEBUG) << *task << " choosed " << *dev << " but not ready";
+
+            }
+        }
+        if (node.unfinished_depend_tasks_ == 0) {
+            node.device_chosen_ = ChooseDevice(task);
             ready_tasks_.push_back(task);
-            LG(INFO) << *task << " is ready";
+            LG(INFO) << *task << " is ready to run at " << *node.device_chosen_;
+        }
+    }
+
+    void Engine::RunTask(TaskPtr task) {
+        DevicePtr d = tasks_[task].device_chosen_;
+        LG(INFO) << "Engine Run " << *task << " at " << *d;
+        assert(d);
+        d->RunTask(task);
+        auto &node = tasks_[task];
+        for (auto &t : node.next_tasks_) {
+            --tasks_[t].nostart_depend_tasks_;
+            CheckTaskReady(t);
         }
     }
 
     void Engine::FinishTask(TaskPtr task) {
         LG(INFO) << "Finish task " << *task;
-        for (auto t : tasks_[task].next_tasks_) {
-            --tasks_[t].in_degree;
+        for (const auto &t : tasks_[task].next_tasks_) {
+            --tasks_[t].unfinished_depend_tasks_;
             CheckTaskReady(t);
         }
         for (auto &m : task->Metas()) {
@@ -210,12 +247,6 @@ namespace Xuanwu {
             }
         }
         return complete_tasks;
-    }
-
-    void Engine::RunTask(TaskPtr task) {
-        LG(INFO) << "Engine Run " << *task;
-        DevicePtr d = ChooseDevice(task);
-        d->RunTask(task);
     }
 
     std::vector<TaskPtr> Engine::DataStep::RegisterTask(TaskPtr task, Flag f) {

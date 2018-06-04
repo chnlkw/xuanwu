@@ -16,7 +16,10 @@
 namespace Xuanwu {
     class Engine : public Runnable {
         struct Node {
-            size_t in_degree = 0;
+            size_t unfinished_depend_tasks_ = 0;
+            size_t nostart_depend_tasks_ = 0;
+            std::set<DevicePtr> devices_of_depend_tasks_;
+            DevicePtr device_chosen_ = nullptr;
             std::vector<TaskPtr> next_tasks_;
         };
         std::map<TaskPtr, Node> tasks_;
@@ -91,7 +94,7 @@ namespace Xuanwu {
     private:
         void AddEdge(TaskPtr src, TaskPtr dst);
 
-        void CheckTaskReady(TaskPtr task);
+        void CheckTaskReady(const TaskPtr &task);
 
         void FinishTask(TaskPtr task);
     };
