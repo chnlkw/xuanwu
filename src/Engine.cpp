@@ -51,6 +51,8 @@ namespace Xuanwu {
         tasks_[src].next_tasks_.push_back(dst);
         tasks_[dst].unfinished_depend_tasks_++;
         tasks_[dst].nostart_depend_tasks_++;
+        if (auto dev = tasks_[src].device_chosen_)
+            tasks_[dst].devices_of_depend_tasks_.insert(dev);
     }
 
     bool Engine::Tick() {
@@ -143,39 +145,48 @@ namespace Xuanwu {
                                                 [](auto a, auto b) { return a.second < b.second; })->first;
 //    return ChooseRunnable(devices_.begin(), devices_.end()).get();
         LG(INFO) << "Choose " << *dev_chosen << " to run " << *t;
-        for (auto &m : t->Metas()) {
-            if (!m.readable) {
-                data_steps_[m.data->GetUID()].ChooseDevice(dev_chosen);
-            }
-        }
-
-        tasks_[t].device_chosen_ = dev_chosen;
-        for (auto &nxt : tasks_[t].next_tasks_) {
-            tasks_[nxt].devices_of_depend_tasks_.insert(dev_chosen);
-        }
 
         return dev_chosen;
     }
 
     void Engine::CheckTaskReady(const TaskPtr &task) {
+
         auto &node = tasks_[task];
+        auto Choose = [&](DevicePtr dev_chosen) {
+            for (auto &nxt : node.next_tasks_) {
+                LG(DEBUG) << *task << " --> " << *nxt;
+                tasks_[nxt].devices_of_depend_tasks_.insert(dev_chosen);
+                for (auto &devdep : tasks_[nxt].devices_of_depend_tasks_) {
+                    LG(DEBUG) << *nxt << " 's depend_tasks : " << *devdep;
+                }
+            }
+            node.device_chosen_ = ChooseDevice(task);
+            ready_tasks_.push_back(task);
+            for (auto &m : task->Metas()) {
+                if (!m.readable) {
+                    data_steps_[m.data->GetUID()].ChooseDevice(dev_chosen);
+                }
+            }
+        };
         if (node.device_chosen_)
             return;
         if (node.nostart_depend_tasks_ == 0 && node.devices_of_depend_tasks_.size() <= 1) {
             DevicePtr dev = ChooseDevice(task);
+            LG(DEBUG) << *task << " 's dependent tasks = " << node.devices_of_depend_tasks_.size();
+            for (auto &devdep : node.devices_of_depend_tasks_) {
+                LG(DEBUG) << *task << " 's dependent task run at " << *devdep;
+            }
             node.devices_of_depend_tasks_.insert(dev);
             if (node.devices_of_depend_tasks_.size() <= 1) {
-                node.device_chosen_ = dev;
-                ready_tasks_.push_back(task);
+                Choose(dev);
                 LG(INFO) << *task << " is ready to run at " << *node.device_chosen_ << " because of locality";
+                return;
             } else {
                 LG(DEBUG) << *task << " choosed " << *dev << " but not ready";
-
             }
         }
         if (node.unfinished_depend_tasks_ == 0) {
-            node.device_chosen_ = ChooseDevice(task);
-            ready_tasks_.push_back(task);
+            Choose(ChooseDevice(task));
             LG(INFO) << *task << " is ready to run at " << *node.device_chosen_;
         }
     }
@@ -263,6 +274,12 @@ namespace Xuanwu {
 
     void Engine::DataStep::UnregisterTask(TaskPtr task) {
         assert(!steps_.empty());
+        if (!steps_[0].tasks.count(task)) {
+            LOG(ERROR) << "Illegal to unregisterTask " << *task << ". legal tasks are:";
+            for (auto &t : steps_[0].tasks) {
+                LOG(ERROR) << "\t" << *t;
+            }
+        }
         assert(steps_[0].tasks.count(task));
         steps_[0].tasks.erase(task);
         if (steps_[0].tasks.empty())
