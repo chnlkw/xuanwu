@@ -31,6 +31,7 @@ namespace Xuanwu {
     }
 
     void GPUDevice::RunTask(TaskPtr t) {
+        LG(INFO) << *this << " Run " << *t;
         ChooseRunnable(workers_.begin(), workers_.end())->RunTask(t);
     }
 
@@ -47,7 +48,7 @@ namespace Xuanwu {
     }
 
     void CPUDevice::RunTask(TaskPtr t) {
-        LG(INFO) << "CPUDevice run task " << *t;
+        LG(INFO) << "CPUDevice Run " << *t;
         ChooseRunnable(workers_.begin(), workers_.end())->RunTask(t);
 //        workers_.at(0)->RunTask(t);
     }

@@ -15,7 +15,7 @@
 #include <thread>
 
 namespace Xuanwu {
-    class WorkerBase : public el::Loggable, public Runnable {
+    class WorkerBase : public Runnable {
     protected:
         DevicePtr device_;
         size_t id_;

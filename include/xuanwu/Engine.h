@@ -15,20 +15,10 @@
 
 namespace Xuanwu {
     class Engine : public Runnable {
-        struct Node {
-            size_t unfinished_depend_tasks_ = 0;
-            size_t nostart_depend_tasks_ = 0;
-            std::set<DevicePtr> devices_of_depend_tasks_;
-            DevicePtr device_chosen_ = nullptr;
-            std::vector<TaskPtr> next_tasks_;
-        };
-        std::map<TaskPtr, Node> tasks_;
-
-//    std::vector<WorkerPtr> workers_;
-        std::vector<TaskPtr> ready_tasks_;
 
         std::vector<std::shared_ptr<DeviceBase>> devices_;
         std::set<DevicePtr> device_entries_;
+        std::unique_ptr<SchedulerBase> scheduler_;
 
         size_t num_running_tasks_ = 0;
 
@@ -92,9 +82,9 @@ namespace Xuanwu {
         DevicePtr ChooseDevice(TaskPtr t);
 
     private:
-        void AddEdge(TaskPtr src, TaskPtr dst);
+//        void AddEdge(TaskPtr src, TaskPtr dst);
 
-        void CheckTaskReady(const TaskPtr &task);
+//        void CheckTaskReady(const TaskPtr &task);
 
         void FinishTask(TaskPtr task);
     };

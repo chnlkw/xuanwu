@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
     int num_gpu = DataCopyInitP2P();
 
     auto injector = di::make_injector(
-            di::bind<>.to(GPUDevice::NumWorkers{1}),
+            di::bind<>.to(GPUDevice::NumWorkers{4}),
 #ifdef NUMA
             di::bind<AllocatorFactory<CPUDevice>>().to<NumaAllocatorFactory<CudaHostAllocator>>(),
 #else
