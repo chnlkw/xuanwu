@@ -75,6 +75,7 @@ namespace Xuanwu {
                         data_steps_[m.data->GetUID()].ChooseDevice(dynamic_cast<DevicePtr>(p.second));
                     }
                 }
+                scheduler_->RunTask(p.first);
                 RunTask(t);
             }
             ready_tasks = scheduler_->FetchReadyTasks();
