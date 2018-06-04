@@ -22,20 +22,31 @@ namespace Xuanwu {
     }
 
     std::vector<TaskPtr> DeviceBase::GetCompleteTasks() {
+        auto ready_tasks = scheduler_->FetchReadyTasks();
+        while (ready_tasks.size()) {
+            for (auto &p : ready_tasks) {
+                auto &t = p.first;
+                p.second->RunTask(t);
+                scheduler_->RunTask(t);
+            }
+            ready_tasks = scheduler_->FetchReadyTasks();
+        }
         std::vector<TaskPtr> ret;
         for (auto &w : workers_) {
             auto r = w->GetCompleteTasks();
             ret.insert(ret.end(), r.begin(), r.end());
         }
+        for (auto &r : ret) {
+            scheduler_->FinishTask(r);
+        }
         return ret;
     }
 
-    void GPUDevice::RunTask(TaskPtr t) {
-        LG(INFO) << *this << " Run " << *t;
-        ChooseRunnable(workers_.begin(), workers_.end())->RunTask(t);
-    }
-
     DeviceBase::DeviceBase() {
+        scheduler_ = std::make_unique<Scheduler>();
+        scheduler_->SetSelector([this](TaskPtr task) -> Runnable * {
+            return (Runnable *) this->ChooseRunnable(workers_.begin(), workers_.end()).get();
+        });
     }
 
     DeviceBase::~DeviceBase() {}
@@ -47,12 +58,6 @@ namespace Xuanwu {
         LG(INFO) << "Create CPUDevice " << this << " num_workers = " << workers_.size();
     }
 
-    void CPUDevice::RunTask(TaskPtr t) {
-        LG(INFO) << "CPUDevice Run " << *t;
-        ChooseRunnable(workers_.begin(), workers_.end())->RunTask(t);
-//        workers_.at(0)->RunTask(t);
-    }
-
     int DeviceBase::ScoreRunTask(TaskPtr t) {
         return 0;
     }
@@ -62,6 +67,11 @@ namespace Xuanwu {
         for (auto &w : workers_)
             ret += w->NumRunningTasks();
         return ret;
+    }
+
+    void DeviceBase::RunTask(TaskPtr t) {
+        LG(INFO) << *this << " Run " << *t;
+        scheduler_->AddTask(t);
     }
 
     int CPUDevice::ScoreRunTask(TaskPtr t) {
