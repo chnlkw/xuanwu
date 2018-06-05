@@ -111,7 +111,9 @@ namespace Xuanwu {
 //            LG(DEBUG) << *t << "is runnable on " << *dev;
         }
         assert(!dev_score.empty());
+        LG(DEBUG) << "tasks metas size = "  << t->Metas().size();
         for (auto &m : t->Metas()) {
+            LG(DEBUG) << "\tmeta = " << m;
             if (!m.readable) {
                 if (auto dev = data_steps_[m.data->GetUID()].DeviceChosen()) {
                     LG(DEBUG) << *dev << " has been chosen by data " << m.data;
@@ -129,7 +131,7 @@ namespace Xuanwu {
                     // if strict, erase other device score
                     for (auto it = dev_score.begin(); it != dev_score.end();) {
                         if (it->first != m.data->device_pinned_) {
-                            LG(DEBUG) << *it->first << " has been erased because pinned by " << *m.data;
+                            LG(DEBUG) << *it->first << " has been erased because pinned by " << *m.data << "  " << it->first << ":" << m.data->device_pinned_;
                             it = dev_score.erase(it);
                         } else
                             ++it;

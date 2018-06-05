@@ -17,6 +17,8 @@ namespace Xuanwu {
     void DataImpl::log(el::base::type::ostream_t &os) const {
         os << "Data[#" << GetUID() << ":" << Name() << "]";
         os << " size=" << this->Bytes();
+        if (device_pinned_)
+            os << "Pin[" << *device_pinned_ << "]";
         os << " (r:";
         for (auto &r : replicas) os << " " << *r.first << " " << r.second.first->data();
         os << ")";
