@@ -75,8 +75,11 @@ namespace Xuanwu {
                         data_steps_[m.data->GetUID()].ChooseDevice(dynamic_cast<DevicePtr>(p.second));
                     }
                 }
-                scheduler_->RunTask(p.first);
                 RunTask(t);
+                for (auto &m : t->Metas()) {
+                    data_steps_[m.data->GetUID()].UnregisterTask(t);
+                }
+                scheduler_->RunTask(p.first);
             }
             ready_tasks = scheduler_->FetchReadyTasks();
         }
@@ -170,9 +173,9 @@ namespace Xuanwu {
         LG(INFO) << "Finish task " << *task;
         scheduler_->FinishTask(task);
 
-        for (auto &m : task->Metas()) {
-            data_steps_[m.data->GetUID()].UnregisterTask(task);
-        }
+//        for (auto &m : task->Metas()) {
+//            data_steps_[m.data->GetUID()].UnregisterTask(task);
+//        }
         task->Finish();
         num_running_tasks_--;
     }
