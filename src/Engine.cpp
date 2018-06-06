@@ -70,12 +70,16 @@ namespace Xuanwu {
         while (ready_tasks.size()) {
             for (auto &p : ready_tasks) {
                 auto &t = p.first;
+                DevicePtr d = dynamic_cast<DevicePtr>(p.second);// tasks_[task].device_chosen_;
                 for (auto &m : t->Metas()) {
                     if (!m.readable) {
-                        data_steps_[m.data->GetUID()].ChooseDevice(dynamic_cast<DevicePtr>(p.second));
+                        data_steps_[m.data->GetUID()].ChooseDevice(d);
                     }
                 }
-                RunTask(t);
+                LG(INFO) << "Engine Run " << *t << " at " << *d;
+                assert(d);
+                d->RunTask(t);
+//                RunTask(t);
                 for (auto &m : t->Metas()) {
                     data_steps_[m.data->GetUID()].UnregisterTask(t);
                 }
@@ -111,7 +115,7 @@ namespace Xuanwu {
 //            LG(DEBUG) << *t << "is runnable on " << *dev;
         }
         assert(!dev_score.empty());
-        LG(DEBUG) << "tasks metas size = "  << t->Metas().size();
+        LG(DEBUG) << "tasks metas size = " << t->Metas().size();
         for (auto &m : t->Metas()) {
             LG(DEBUG) << "\tmeta = " << m;
             if (!m.readable) {
@@ -131,7 +135,8 @@ namespace Xuanwu {
                     // if strict, erase other device score
                     for (auto it = dev_score.begin(); it != dev_score.end();) {
                         if (it->first != m.data->device_pinned_) {
-                            LG(DEBUG) << *it->first << " has been erased because pinned by " << *m.data << "  " << it->first << ":" << m.data->device_pinned_;
+                            LG(DEBUG) << *it->first << " has been erased because pinned by " << *m.data << "  "
+                                      << it->first << ":" << m.data->device_pinned_;
                             it = dev_score.erase(it);
                         } else
                             ++it;
@@ -164,10 +169,6 @@ namespace Xuanwu {
 //    }
 
     void Engine::RunTask(TaskPtr task) {
-        DevicePtr d = ChooseDevice(task);// tasks_[task].device_chosen_;
-        LG(INFO) << "Engine Run " << *task << " at " << *d;
-        assert(d);
-        d->RunTask(task);
 
     }
 

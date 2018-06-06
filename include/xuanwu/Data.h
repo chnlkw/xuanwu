@@ -68,6 +68,7 @@ namespace Xuanwu {
 
         virtual void ResizeBytes(size_t bytes) = 0;
 
+        virtual DataBasePtr Renew(size_t bytes) const = 0;
 //        void Follow(DataBasePtr that) {
 //            follows_.push_back(that);
 //        }
@@ -80,7 +81,7 @@ namespace Xuanwu {
 
         virtual void Create(size_t bytes, DevicePtr device) = 0;
 
-        virtual ArrayBase* CurrentArray() const = 0;
+        virtual ArrayBase *CurrentArray() const = 0;
 
         MMBase *GetMM() const { return mm_; }
 
@@ -113,6 +114,9 @@ namespace Xuanwu {
             }
         }
 
+        Data(DataBasePtr ptr) : std::shared_ptr<DataBase>(ptr) {
+        }
+
         void swap(Data<T> &that) {
             std::shared_ptr<DataBase>::swap(that);
         }
@@ -122,6 +126,10 @@ namespace Xuanwu {
             Write();
             size_t bytes = vec.size() * sizeof(T);
             CPUCopy(CurrentArray().GetPtr(), Ptr((void *) vec.data()), bytes, 0);
+        }
+
+        Data<T> Renew(size_t count) const {
+            return Data<T>(get()->Renew(count * sizeof(T)));
         }
 
         using value_type = T;
@@ -140,7 +148,7 @@ namespace Xuanwu {
         }
 
         Array<T> &CurrentArray() const {
-            return *static_cast<Array<T>*>(get()->CurrentArray());
+            return *static_cast<Array<T> *>(get()->CurrentArray());
         }
 
         Array<T> &Read() const {
@@ -189,7 +197,7 @@ namespace Xuanwu {
         std::map<DevicePtr, std::pair<ArrayBasePtr, Event>> replicas;
 //        std::map<DevicePtr, ArrayBasePtr> invalids;
 
-        mutable ArrayBase* current_array_ = nullptr;
+        mutable ArrayBase *current_array_ = nullptr;
 
     public:
         DataImpl(MMBase *mm, size_t size);
@@ -208,13 +216,15 @@ namespace Xuanwu {
 
         void Create(size_t bytes, DevicePtr device) override;
 
-        ArrayBase* CurrentArray() const override;
+        ArrayBase *CurrentArray() const override;
 
         float ReadOverhead(DevicePtr dev) override;
 
         float WriteOverhead(DevicePtr dev) override {
             return 0;
         }
+
+        DataBasePtr Renew(size_t bytes) const override;
 
         Ptr GetPtr() override;
 

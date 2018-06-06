@@ -65,9 +65,8 @@ namespace Xuanwu {
             std::vector<Vec> value_out;
             for (size_t i = 0; i < size_; i++) {
                 assert(value_in[i].size() == send_sum_[i]);
-//                value_out.push_back(Vec(value_in[i]));
-//                value_out.back().resize(recv_sum_[i]);
-                value_out.emplace_back(recv_sum_[i]);
+//                value_out.emplace_back(recv_sum_[i]);
+                value_out.push_back(Renew(value_in[i], recv_sum_[i]));
                 assert(value_out.back().size() == recv_sum_[i]);
             }
             for (size_t i = 0; i < size_; i++) {

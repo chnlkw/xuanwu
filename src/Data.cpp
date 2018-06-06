@@ -132,7 +132,7 @@ namespace Xuanwu {
 //                arr = invalids[dev];
 //                invalids.erase(dev);
 //            } else {
-            arr = std::make_unique<ArrayBase>(bytes_, dynamic_cast<MMImpl*>(mm_)->GetAllocatorByDevice(dev));
+            arr = std::make_unique<ArrayBase>(bytes_, dynamic_cast<MMImpl *>(mm_)->GetAllocatorByDevice(dev));
 //            }
             decltype(replicas.begin()) from;
             int max_copy_speed = 0;
@@ -178,7 +178,7 @@ namespace Xuanwu {
             }
         }
         if (!replicas.count(dev)) {
-            auto arr = std::make_unique<ArrayBase>(bytes_, dynamic_cast<MMImpl*>(mm_)->GetAllocatorByDevice(dev));
+            auto arr = std::make_unique<ArrayBase>(bytes_, dynamic_cast<MMImpl *>(mm_)->GetAllocatorByDevice(dev));
 //            if (!replicas.empty())
 //                worker->Copy(arr->GetPtr(), replicas.begin()->second->GetPtr(), bytes_);
 //                arr->CopyFromAsync(*replicas.begin()->second, worker);
@@ -227,7 +227,7 @@ namespace Xuanwu {
     void DataImpl::Create(size_t bytes, DevicePtr dev) {
         clear();
         bytes_ = bytes;
-        auto arr = std::make_unique<ArrayBase>(bytes_, dynamic_cast<MMImpl*>(mm_)->GetAllocatorByDevice(dev));
+        auto arr = std::make_unique<ArrayBase>(bytes_, dynamic_cast<MMImpl *>(mm_)->GetAllocatorByDevice(dev));
         replicas.emplace(std::make_pair(dev, std::make_pair(std::move(arr), std::make_unique<EventDummy>())));
         current_array_ = replicas[dev].first.get();
 //        replicas[device] = arr;
@@ -236,5 +236,12 @@ namespace Xuanwu {
 
     ArrayBase *DataImpl::CurrentArray() const {
         return current_array_;
+    }
+
+    DataBasePtr DataImpl::Renew(size_t bytes) const {
+        DataBasePtr ret = std::make_shared<DataImpl>(mm_, bytes);
+        ret->PinnedToDevice(device_pinned_, device_pinned_strict_);
+        LG(DEBUG) << "DataImpl Renew " << *this;
+        return ret;
     }
 }
