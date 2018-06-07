@@ -58,35 +58,13 @@ namespace Xuanwu {
         ticking = true;
         LG(DEBUG) << "Tick";
 
-        GetCompleteTasks();
+        RunTasks({});
 
         if (Empty()) {
             ticking = false;
             return false;
         }
 
-//        std::sort(ready_tasks_.begin(), ready_tasks_.end(), [](auto &a, auto &b) { return a->Seq() < b->Seq(); });
-        auto ready_tasks = scheduler_->FetchReadyTasks();
-        while (ready_tasks.size()) {
-            for (auto &p : ready_tasks) {
-                auto &t = p.first;
-                DevicePtr d = dynamic_cast<DevicePtr>(p.second);// tasks_[task].device_chosen_;
-                for (auto &m : t->Metas()) {
-                    if (!m.readable) {
-                        data_steps_[m.data->GetUID()].ChooseDevice(d);
-                    }
-                }
-                LG(INFO) << "Engine Run " << *t << " at " << *d;
-                assert(d);
-                d->RunTask(t);
-//                RunTask(t);
-                for (auto &m : t->Metas()) {
-                    data_steps_[m.data->GetUID()].UnregisterTask(t);
-                }
-                scheduler_->RunTask(p.first);
-            }
-            ready_tasks = scheduler_->FetchReadyTasks();
-        }
         ticking = false;
         return true;
     }
@@ -164,14 +142,6 @@ namespace Xuanwu {
         return dev_chosen;
     }
 
-//    void Engine::CheckTaskReady(const TaskPtr &task) {
-//
-//    }
-
-    void Engine::RunTask(TaskPtr task) {
-
-    }
-
     void Engine::FinishTask(TaskPtr task) {
         LG(INFO) << "Finish task " << *task;
         scheduler_->FinishTask(task);
@@ -184,23 +154,7 @@ namespace Xuanwu {
     }
 
     TaskBase &Engine::AddTask(TaskPtr task) {
-        LG(INFO) << "AddTask " << *task;
-        num_running_tasks_++;
-        for (auto &m : task->Metas()) {
-            m.data->RegisterTask(task);
-            LG(DEBUG) << "RegisterTask " << *task << " " << m;
-            Flag f;
-            if (m.readable && m.writable)
-                f = Flag::ReadWrite;
-            else if (m.readable)
-                f = Flag::Read;
-            else if (m.writable)
-                f = Flag::Write;
-
-            task->AddDependency(data_steps_[m.data->GetUID()].RegisterTask(task, f));
-        }
-        scheduler_->AddTask(task);
-
+        RunTasks({task});
         return *task;
     }
 
@@ -208,15 +162,57 @@ namespace Xuanwu {
         return devices_;
     }
 
-    std::vector<TaskPtr> Engine::GetCompleteTasks() {
-        std::vector<TaskPtr> complete_tasks;
-        for (auto &d : devices_) {
-            for (auto &t : d->GetCompleteTasks()) {
-                FinishTask(t);
-                complete_tasks.push_back(t);
+    std::vector<TaskPtr> Engine::RunTasks(std::vector<TaskPtr> tasks) {
+        std::vector<TaskPtr> ret;
+
+        for (auto &t : tasks) {
+            LG(INFO) << "AddTask " << *t;
+            num_running_tasks_++;
+            for (auto &m : t->Metas()) {
+                m.data->RegisterTask(t);
+                LG(DEBUG) << "RegisterTask " << *t << " " << m;
+                Flag f;
+                if (m.readable && m.writable)
+                    f = Flag::ReadWrite;
+                else if (m.readable)
+                    f = Flag::Read;
+                else if (m.writable)
+                    f = Flag::Write;
+                t->AddDependency(data_steps_[m.data->GetUID()].RegisterTask(t, f));
             }
+            scheduler_->AddTask(t);
         }
-        return complete_tasks;
+//        std::sort(ready_tasks_.begin(), ready_tasks_.end(), [](auto &a, auto &b) { return a->Seq() < b->Seq(); });
+        bool first = true;
+        auto ready_tasks = scheduler_->FetchReadyTasks();
+        while (first || !ready_tasks.empty()) {
+            first = false;
+            std::map<Runnable *, std::vector<TaskPtr>> r;
+            for (auto &d : devices_)
+                r[d.get()] = {};
+            for (auto &p : ready_tasks) {
+                auto &t = p.first;
+                DevicePtr d = dynamic_cast<DevicePtr>(p.second);// tasks_[task].device_chosen_;
+                assert(d);
+                for (auto &m : t->Metas())
+                    if (!m.readable)
+                        data_steps_[m.data->GetUID()].ChooseDevice(d);
+                LG(INFO) << "Engine Run " << *t << " at " << *d;
+                r[d].push_back(p.first);
+                for (auto &m : t->Metas())
+                    data_steps_[m.data->GetUID()].UnregisterTask(t);
+                scheduler_->RunTask(p.first);
+            }
+            for (auto &dev_task : r) {
+                auto complete_tasks = dev_task.first->RunTasks(std::move(dev_task.second));
+                for (auto &t : complete_tasks)
+                    FinishTask(t);
+                scheduler_->FinishTasks(complete_tasks);
+                Append(ret, std::move(complete_tasks));
+            }
+            ready_tasks = scheduler_->FetchReadyTasks();
+        }
+        return ret;
     }
 
     std::vector<TaskPtr> Engine::DataStep::RegisterTask(TaskPtr task, Flag f) {

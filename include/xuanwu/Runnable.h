@@ -10,11 +10,11 @@
 namespace Xuanwu {
     class Runnable : public el::Loggable {
     public:
-        virtual void RunTask(TaskPtr) = 0;
+        /// @param tasks [in] Tasks to run
+        /// @returns Completed tasks
+        virtual std::vector<TaskPtr> RunTasks(std::vector<TaskPtr> tasks) = 0;
 
         virtual size_t NumRunningTasks() const = 0;
-
-        virtual std::vector<TaskPtr> GetCompleteTasks() = 0;
 
         virtual bool Empty() const {
             return NumRunningTasks() == 0;
@@ -42,13 +42,17 @@ namespace Xuanwu {
 
     class SchedulerBase {
     protected:
-        using Member = Runnable*;
+        using Member = Runnable *;
     public:
         virtual void AddTask(const TaskPtr &t) = 0;
 
         virtual void RunTask(const TaskPtr &t) = 0;
 
         virtual void FinishTask(const TaskPtr &t) = 0;
+
+        void RunTasks(const std::vector<TaskPtr> &ts);
+
+        void FinishTasks(const std::vector<TaskPtr> &ts);
 
         virtual std::vector<std::pair<TaskPtr, Member>> FetchReadyTasks() = 0;
 

@@ -73,11 +73,9 @@ namespace Xuanwu {
             return AddTask(t);
         }
 
-        void RunTask(TaskPtr t) override;
+        std::vector<TaskPtr> RunTasks(std::vector<TaskPtr> tasks) override;
 
         bool Tick();
-
-        std::vector<TaskPtr> GetCompleteTasks() override;
 
         DevicePtr ChooseDevice(TaskPtr t);
 

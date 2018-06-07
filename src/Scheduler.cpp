@@ -58,7 +58,7 @@ namespace Xuanwu {
                 }
             }
             node.member_chosen_ = f_selector_(task);
-            ready_tasks_.push_back(std::make_pair(task, node.member_chosen_));
+            ready_tasks_.emplace_back(task, node.member_chosen_);
 
         };
         if (node.member_chosen_)
@@ -84,4 +84,13 @@ namespace Xuanwu {
         }
     }
 
+    void SchedulerBase::RunTasks(const std::vector<TaskPtr> &ts) {
+        for (auto &t : ts)
+            RunTask(t);
+    }
+
+    void SchedulerBase::FinishTasks(const std::vector<TaskPtr> &ts) {
+        for (auto &t : ts)
+            FinishTask(t);
+    }
 }

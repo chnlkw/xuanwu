@@ -26,6 +26,11 @@
 
 namespace Xuanwu {
 
+    template <class V1, class V2>
+    void Append(V1& a, V2 b) {
+        a.insert(a.end(), std::make_move_iterator(b.begin()), std::make_move_iterator(b.end()));
+    }
+
     class TaskBase : public std::enable_shared_from_this<TaskBase>, public el::Loggable {
     public:
         struct Meta : public el::Loggable {
@@ -51,7 +56,7 @@ namespace Xuanwu {
 
         std::vector<Meta> metas_;
         std::vector<DataBasePtr> tmp_datas_;
-        std::vector<std::pair<LocalArrayGPU, DataBasePtr>> tmp_data_mapping_;
+//        std::vector<std::pair<LocalArrayGPU, DataBasePtr>> tmp_data_mapping_;
         bool finished = false;
 
         friend class Engine;
@@ -114,14 +119,11 @@ namespace Xuanwu {
 
         void AddTempData(DataBasePtr data);
 
-        void AddTempDataMapping(LocalArrayGPU, DataBasePtr);
+//        void AddTempDataMapping(LocalArrayGPU, DataBasePtr);
 
-        auto &GetTempDataMappings() { return tmp_data_mapping_; }
+//        auto &GetTempDataMappings() { return tmp_data_mapping_; }
 
-        void AddDependency(std::vector<TaskPtr> tasks) {
-            depend_tasks_.insert(depend_tasks_.end(), std::make_move_iterator(tasks.begin()),
-                                 std::make_move_iterator(tasks.end()));
-        }
+        void AddDependency(std::vector<TaskPtr> tasks);
 
         const auto &DependTasks() const {
             return depend_tasks_;
@@ -232,6 +234,7 @@ namespace Xuanwu {
 
         ArrayBase *MakeArrayBase(size_t bytes);
 
+        /*
         template<class T>
         DeviceArray<T> *MakeLocalMapping(Data<T> &d) {
             LocalArray<T> g;
@@ -239,6 +242,7 @@ namespace Xuanwu {
             task->AddTempDataMapping(g, d);
             return g.GetArrPtr();
         }
+         */
 
         template<class T>
         T *Alloc(size_t count) {

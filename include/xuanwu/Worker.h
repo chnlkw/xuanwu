@@ -50,11 +50,9 @@ namespace Xuanwu {
 
         ~CPUWorker();
 
-        void RunTask(TaskPtr t) override;
+        std::vector<TaskPtr> RunTasks(std::vector<TaskPtr> tasks) override;
 
         bool Empty() const override { return tasks_.empty(); }
-
-        std::vector<TaskPtr> GetCompleteTasks() override;
 
         size_t NumRunningTasks() const override { return tasks_.size(); }
 
@@ -73,13 +71,13 @@ namespace Xuanwu {
             std::vector<DeviceArrayBase> tmp_arrs;
             int step = 0;
         };
-        std::deque<Meta> queue_;
+        std::deque<Meta> preparing_queue_, running_queue_;
 
     public:
         explicit GPUWorker(GPUDevice *gpu);
 
         bool Empty() const override {
-            return queue_.empty();
+            return preparing_queue_.empty() && running_queue_.empty();
         }
 
         const cudaStream_t &Stream() const {
@@ -88,15 +86,13 @@ namespace Xuanwu {
 
     private:
 
-        void RunTask(TaskPtr t) override;
+        std::vector<TaskPtr> RunTasks(std::vector<TaskPtr> tasks) override;
 
         size_t NumRunningTasks() const override {
-            return queue_.size();
+            return preparing_queue_.size();
         }
 
         cudaEvent_t GetEvent();
-
-        std::vector<TaskPtr> GetCompleteTasks() override;
 
         Event Copy(Ptr dst, Ptr src, size_t bytes) override;
 
