@@ -11,9 +11,10 @@
 #include "Runnable.h"
 
 namespace Xuanwu {
-    class DeviceBase : public el::Loggable, public std::enable_shared_from_this<DeviceBase>, public Runnable {
+    class DeviceBase : public std::enable_shared_from_this<DeviceBase>, public Runnable {
     protected:
         std::vector<std::unique_ptr<WorkerBase>> workers_;
+        std::unique_ptr<SchedulerBase> scheduler_;
 
     public:
         explicit DeviceBase();
@@ -27,6 +28,8 @@ namespace Xuanwu {
         const auto &Workers() const {
             return workers_;
         }
+
+        void RunTask(TaskPtr t) override;
 
         size_t NumRunningTasks() const override;
 

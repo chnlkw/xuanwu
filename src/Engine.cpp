@@ -30,6 +30,10 @@ namespace Xuanwu {
             devices_(std::make_move_iterator(g->begin()), std::make_move_iterator(g->end())) {
         LG(INFO) << "engine created with and devices.size() = "
                  << devices_.size();
+        scheduler_.reset(new Scheduler);
+        scheduler_->SetSelector([this](TaskPtr task) -> Runnable * {
+            return this->ChooseDevice(std::move(task));
+        });
         for (auto &d : devices_)
             device_entries_.insert(d.get());
     }
@@ -45,12 +49,8 @@ namespace Xuanwu {
 //    auto d2 = device_factory.create(-1);
 //}
 
-    void Engine::AddEdge(TaskPtr src, TaskPtr dst) {
-        if (src->finished)
-            return;
-        tasks_[src].next_tasks_.push_back(dst);
-        tasks_[dst].in_degree++;
-    }
+//    void Engine::AddEdge(TaskPtr src, TaskPtr dst) {
+//    }
 
     bool Engine::Tick() {
         static std::atomic<bool> ticking;
@@ -66,9 +66,26 @@ namespace Xuanwu {
         }
 
 //        std::sort(ready_tasks_.begin(), ready_tasks_.end(), [](auto &a, auto &b) { return a->Seq() < b->Seq(); });
-        for (auto it = ready_tasks_.begin(); it != ready_tasks_.end();) {
-            RunTask(*it);
-            it = ready_tasks_.erase(it);
+        auto ready_tasks = scheduler_->FetchReadyTasks();
+        while (ready_tasks.size()) {
+            for (auto &p : ready_tasks) {
+                auto &t = p.first;
+                DevicePtr d = dynamic_cast<DevicePtr>(p.second);// tasks_[task].device_chosen_;
+                for (auto &m : t->Metas()) {
+                    if (!m.readable) {
+                        data_steps_[m.data->GetUID()].ChooseDevice(d);
+                    }
+                }
+                LG(INFO) << "Engine Run " << *t << " at " << *d;
+                assert(d);
+                d->RunTask(t);
+//                RunTask(t);
+                for (auto &m : t->Metas()) {
+                    data_steps_[m.data->GetUID()].UnregisterTask(t);
+                }
+                scheduler_->RunTask(p.first);
+            }
+            ready_tasks = scheduler_->FetchReadyTasks();
         }
         ticking = false;
         return true;
@@ -98,7 +115,9 @@ namespace Xuanwu {
 //            LG(DEBUG) << *t << "is runnable on " << *dev;
         }
         assert(!dev_score.empty());
+        LG(DEBUG) << "tasks metas size = " << t->Metas().size();
         for (auto &m : t->Metas()) {
+            LG(DEBUG) << "\tmeta = " << m;
             if (!m.readable) {
                 if (auto dev = data_steps_[m.data->GetUID()].DeviceChosen()) {
                     LG(DEBUG) << *dev << " has been chosen by data " << m.data;
@@ -116,7 +135,8 @@ namespace Xuanwu {
                     // if strict, erase other device score
                     for (auto it = dev_score.begin(); it != dev_score.end();) {
                         if (it->first != m.data->device_pinned_) {
-                            LG(DEBUG) << *it->first << " has been erased because pinned by " << *m.data;
+                            LG(DEBUG) << *it->first << " has been erased because pinned by " << *m.data << "  "
+                                      << it->first << ":" << m.data->device_pinned_;
                             it = dev_score.erase(it);
                         } else
                             ++it;
@@ -140,32 +160,26 @@ namespace Xuanwu {
                                                 [](auto a, auto b) { return a.second < b.second; })->first;
 //    return ChooseRunnable(devices_.begin(), devices_.end()).get();
         LG(INFO) << "Choose " << *dev_chosen << " to run " << *t;
-        for (auto &m : t->Metas()) {
-            if (!m.readable) {
-                data_steps_[m.data->GetUID()].ChooseDevice(dev_chosen);
-            }
-        }
+
         return dev_chosen;
     }
 
-    void Engine::CheckTaskReady(TaskPtr task) {
-        if (tasks_[task].in_degree == 0) {
-            ready_tasks_.push_back(task);
-            LG(INFO) << *task << " is ready";
-        }
+//    void Engine::CheckTaskReady(const TaskPtr &task) {
+//
+//    }
+
+    void Engine::RunTask(TaskPtr task) {
+
     }
 
     void Engine::FinishTask(TaskPtr task) {
         LG(INFO) << "Finish task " << *task;
-        for (auto t : tasks_[task].next_tasks_) {
-            --tasks_[t].in_degree;
-            CheckTaskReady(t);
-        }
-        for (auto &m : task->Metas()) {
-            data_steps_[m.data->GetUID()].UnregisterTask(task);
-        }
+        scheduler_->FinishTask(task);
+
+//        for (auto &m : task->Metas()) {
+//            data_steps_[m.data->GetUID()].UnregisterTask(task);
+//        }
         task->Finish();
-        tasks_.erase(task);
         num_running_tasks_--;
     }
 
@@ -185,15 +199,8 @@ namespace Xuanwu {
 
             task->AddDependency(data_steps_[m.data->GetUID()].RegisterTask(task, f));
         }
-        for (const auto &depend_task_w : task->DependTasks()) {
-//                if (!depend_task.expired())
-//                    AddEdge(depend_task.lock(), task);
-            if (auto depend_task = depend_task_w.lock()) {
-                LG(INFO) << "AddEdge " << *depend_task << " -> " << *task;
-                AddEdge(depend_task, task);
-            }
-        }
-        CheckTaskReady(task);
+        scheduler_->AddTask(task);
+
         return *task;
     }
 
@@ -212,12 +219,6 @@ namespace Xuanwu {
         return complete_tasks;
     }
 
-    void Engine::RunTask(TaskPtr task) {
-        LG(INFO) << "Engine Run " << *task;
-        DevicePtr d = ChooseDevice(task);
-        d->RunTask(task);
-    }
-
     std::vector<TaskPtr> Engine::DataStep::RegisterTask(TaskPtr task, Flag f) {
         if (steps_.empty() || f == Flag::ReadWrite || steps_.back().flag != f) {
             steps_.emplace_back(f);
@@ -232,6 +233,12 @@ namespace Xuanwu {
 
     void Engine::DataStep::UnregisterTask(TaskPtr task) {
         assert(!steps_.empty());
+        if (!steps_[0].tasks.count(task)) {
+            LOG(ERROR) << "Illegal to unregisterTask " << *task << ". legal tasks are:";
+            for (auto &t : steps_[0].tasks) {
+                LOG(ERROR) << "\t" << *t;
+            }
+        }
         assert(steps_[0].tasks.count(task));
         steps_[0].tasks.erase(task);
         if (steps_[0].tasks.empty())

@@ -16,6 +16,7 @@
 #include "xuanwu/Task.h"
 #include "xuanwu/Worker.h"
 #include "xuanwu/Xuanwu.h"
+#include "Algorithm.h"
 
 #include <thrust/host_vector.h>
 #include <thrust/device_vector.h>
@@ -160,7 +161,7 @@ namespace Xuanwu {
 
         template<class TValue>
         Vector<TValue> ShuffleValues(const Vector<TValue> &value_in) const {
-            Vector<TValue> value_out(value_in.size());
+            Vector<TValue> value_out = Renew(value_in, value_in.size());
             ShuffleByIdx(value_out, value_in, gather_indices_, name);
             return std::move(value_out);
         }

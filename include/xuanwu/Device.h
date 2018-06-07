@@ -27,8 +27,6 @@ namespace Xuanwu {
 
         CPUDevice();
 
-        void RunTask(TaskPtr t) override;
-
         int ScoreRunTask(TaskPtr t) override;
 
         CPUWorker& GetWorker() {
@@ -51,8 +49,6 @@ namespace Xuanwu {
         using NumWorkers = Strong<int, 2>;
         using HeapLimit = Strong<size_t, 100LU<<20>;
         GPUDevice(NumWorkers, HeapLimit);
-
-        void RunTask(TaskPtr t) override;
 
         int ScoreRunTask(TaskPtr t) override;
 

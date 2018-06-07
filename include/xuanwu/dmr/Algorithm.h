@@ -14,7 +14,6 @@
 
 namespace Xuanwu {
 
-    /*
 template<class V>
 V Renew(const V &in, size_t count = 0);
 
@@ -30,11 +29,8 @@ Array<T> Renew(const Array<T> &in, size_t count) {
 
 template<class T>
 Data<T> Renew(const Data<T> &in, size_t count) {
-    Data<T> ret(count);
-    ret->Follow(in);
-    return ret;
+    return in.Renew(count);
 }
- */
 
 }
 
