@@ -22,7 +22,7 @@ namespace Xuanwu {
     }
 
     DeviceBase::DeviceBase() {
-        scheduler_ = std::make_unique<Scheduler>();
+        scheduler_ = std::make_unique<Scheduler>("Device");
         scheduler_->SetSelector([this](TaskPtr task) -> Runnable * {
             return (Runnable *) this->ChooseRunnable(workers_.begin(), workers_.end()).get();
         });

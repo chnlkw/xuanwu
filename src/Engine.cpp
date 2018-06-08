@@ -30,7 +30,7 @@ namespace Xuanwu {
             devices_(std::make_move_iterator(g->begin()), std::make_move_iterator(g->end())) {
         LG(INFO) << "engine created with and devices.size() = "
                  << devices_.size();
-        scheduler_.reset(new Scheduler);
+        scheduler_.reset(new Scheduler("Engine"));
         scheduler_->SetSelector([this](TaskPtr task) -> Runnable * {
             return this->ChooseDevice(std::move(task));
         });
@@ -143,14 +143,6 @@ namespace Xuanwu {
     }
 
     void Engine::FinishTask(TaskPtr task) {
-        LG(INFO) << "Finish task " << *task;
-        scheduler_->FinishTask(task);
-
-//        for (auto &m : task->Metas()) {
-//            data_steps_[m.data->GetUID()].UnregisterTask(task);
-//        }
-        task->Finish();
-        num_running_tasks_--;
     }
 
     TaskBase &Engine::AddTask(TaskPtr task) {
@@ -199,15 +191,19 @@ namespace Xuanwu {
                         data_steps_[m.data->GetUID()].ChooseDevice(d);
                 LG(INFO) << "Engine Run " << *t << " at " << *d;
                 r[d].push_back(p.first);
-                for (auto &m : t->Metas())
-                    data_steps_[m.data->GetUID()].UnregisterTask(t);
                 scheduler_->RunTask(p.first);
             }
             for (auto &dev_task : r) {
                 auto complete_tasks = dev_task.first->RunTasks(std::move(dev_task.second));
-                for (auto &t : complete_tasks)
+                for (auto &t : complete_tasks) {
                     FinishTask(t);
+                    for (auto &m : t->Metas())
+                        data_steps_[m.data->GetUID()].UnregisterTask(t);
+                    LG(INFO) << "Finish task " << *t;
+                    t->Finish();
+                }
                 scheduler_->FinishTasks(complete_tasks);
+                num_running_tasks_-=complete_tasks.size();
                 Append(ret, std::move(complete_tasks));
             }
             ready_tasks = scheduler_->FetchReadyTasks();

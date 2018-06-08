@@ -43,6 +43,7 @@ namespace Xuanwu {
         std::mutex m_;
         std::condition_variable cv_;
         std::thread worker_thread_;
+        std::pair<TaskPtr, std::chrono::time_point<std::chrono::high_resolution_clock> > start_time_;
 
         void start_worker();
     public:
@@ -88,9 +89,7 @@ namespace Xuanwu {
 
         std::vector<TaskPtr> RunTasks(std::vector<TaskPtr> tasks) override;
 
-        size_t NumRunningTasks() const override {
-            return preparing_queue_.size();
-        }
+        size_t NumRunningTasks() const override;
 
         cudaEvent_t GetEvent();
 

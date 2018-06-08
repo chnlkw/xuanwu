@@ -88,6 +88,10 @@ namespace Xuanwu {
         Append(tasks_, tasks);
 
         auto prepare = [&](TaskPtr t) -> bool {
+            if (start_time_.first != t) {
+                start_time_.first = t;
+                start_time_.second = std::chrono::high_resolution_clock::now();
+            }
             auto cputask = dynamic_cast<CPUTask *>(t.get());
             if (!cputask)
                 cputask = t->GetCPUTask();
@@ -104,7 +108,8 @@ namespace Xuanwu {
                                 return false;
                         }
                     }
-                LG(INFO) << *this << " Prepare OK " << *t;
+                std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_time_.second;
+                LG(INFO) << *this << " Prepare OK " << *t << " " << elapsed.count() * 1000 << " ms";
                 {
                     std::unique_lock<std::mutex> lk(m_);
                     running_tasks_.push_back(t);
@@ -263,6 +268,10 @@ namespace Xuanwu {
         assert(gpu);
         LG(INFO) << *this << " copy " << src << " to " << dst << " bytes=" << bytes;
         return GPUCopy(dst, src, bytes, gpu->GPUID(), stream_);
+    }
+
+    size_t GPUWorker::NumRunningTasks() const {
+        return preparing_queue_.size() + running_queue_.size();
     }
 
 }

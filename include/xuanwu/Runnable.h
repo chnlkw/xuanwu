@@ -73,13 +73,16 @@ namespace Xuanwu {
         };
         std::map<TaskPtr, Node> tasks_;
         std::vector<std::pair<TaskPtr, Member>> ready_tasks_;
+        const char* log_name_;
 
-        void CheckTaskReady(const TaskPtr &task);
+        bool CheckTaskReady(const TaskPtr &task);
 
     public:
+        Scheduler(const char* log_name);
+
         void AddTask(const TaskPtr &t) override;
 
-        void RunTask(const TaskPtr &t) override;
+        void RunTask(const TaskPtr &task) override;
 
         void FinishTask(const TaskPtr &t) override;
 

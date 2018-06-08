@@ -5,7 +5,7 @@
 #include "Runnable.h"
 #include "Task.h"
 
-#define LG(x) CLOG(x, "Engine")
+#define LG(x) CLOG(x, log_name_)
 
 namespace Xuanwu {
 
@@ -22,7 +22,8 @@ namespace Xuanwu {
                     tasks_[task].devices_of_depend_tasks_.insert(dev);
             }
         }
-        CheckTaskReady(task);
+        if (CheckTaskReady(task))
+            LG(INFO) << *task << " is ready just added";
     }
 
     std::vector<std::pair<TaskPtr, Scheduler::Member>> Scheduler::FetchReadyTasks() {
@@ -31,23 +32,25 @@ namespace Xuanwu {
         return std::move(ret);
     }
 
-    void Scheduler::RunTask(const TaskPtr &t) {
-        auto &node = tasks_[t];
+    void Scheduler::RunTask(const TaskPtr &task) {
+        auto &node = tasks_[task];
         for (auto &t : node.next_tasks_) {
             --tasks_[t].nostart_depend_tasks_;
-            CheckTaskReady(t);
+            if (CheckTaskReady(t))
+                LG(INFO) << *t << " becomes ready when RunTask " << *task;
         }
     }
 
     void Scheduler::FinishTask(const TaskPtr &task) {
         for (const auto &t : tasks_[task].next_tasks_) {
             --tasks_[t].unfinished_depend_tasks_;
-            CheckTaskReady(t);
+            if (CheckTaskReady(t))
+                LG(INFO) << *t << " becomes ready when Finish " << *task;
         }
         tasks_.erase(task);
     }
 
-    void Scheduler::CheckTaskReady(const TaskPtr &task) {
+    bool Scheduler::CheckTaskReady(const TaskPtr &task) {
         auto &node = tasks_[task];
         auto Choose = [&](Member mem_chosen) {
             for (auto &nxt : node.next_tasks_) {
@@ -62,7 +65,7 @@ namespace Xuanwu {
 
         };
         if (node.member_chosen_)
-            return;
+            return false;
         if (node.nostart_depend_tasks_ == 0 && node.devices_of_depend_tasks_.size() <= 1) {
             Member dev = f_selector_(task);
             LG(DEBUG) << *task << " 's dependent tasks = " << node.devices_of_depend_tasks_.size();
@@ -73,7 +76,7 @@ namespace Xuanwu {
             if (node.devices_of_depend_tasks_.size() <= 1) {
                 Choose(dev);
                 LG(INFO) << *task << " is ready to run at " << *node.member_chosen_ << " because of locality";
-                return;
+                return true;
             } else {
                 LG(DEBUG) << *task << " choosed " << *dev << " but not ready";
             }
@@ -81,8 +84,12 @@ namespace Xuanwu {
         if (node.unfinished_depend_tasks_ == 0) {
             Choose(f_selector_(task));
             LG(INFO) << *task << " is ready to run at " << *node.member_chosen_;
+            return true;
         }
+        return false;
     }
+
+    Scheduler::Scheduler(const char *log_name) : SchedulerBase(), log_name_(log_name) {}
 
     void SchedulerBase::RunTasks(const std::vector<TaskPtr> &ts) {
         for (auto &t : ts)

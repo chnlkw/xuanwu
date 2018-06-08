@@ -89,6 +89,7 @@ namespace Xuanwu {
             for (auto p : m_) {
                 os << "\t\t" << ptr_ + p.first << " " << p.second << '\n';
             }
+            LOG(FATAL) << os.str();
 
             throw std::runtime_error(os.str().c_str());
         }
