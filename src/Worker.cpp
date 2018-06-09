@@ -146,6 +146,8 @@ namespace Xuanwu {
         assert(gpu);
         CUDA_CALL(cudaSetDevice, gpu->GPUID());
 
+        bool query_complete = tasks.empty();
+
         for (auto &t : tasks) {
             LG(INFO) << *this << *t << " Run ";
             Meta meta{GetEvent(), GetEvent(), GetEvent(), GetEvent(), t, t->Metas()};
@@ -153,6 +155,8 @@ namespace Xuanwu {
         }
         auto GetCompleteTasks = [&]() {
             std::vector<TaskPtr> ret;
+            if (!query_complete)
+                return ret;
             while (!running_queue_.empty()) {
                 Meta &meta = running_queue_.front();
                 TaskPtr &t = meta.task;

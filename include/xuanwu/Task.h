@@ -26,8 +26,8 @@
 
 namespace Xuanwu {
 
-    template <class V1, class V2>
-    void Append(V1& a, V2 b) {
+    template<class V1, class V2>
+    void Append(V1 &a, V2 b) {
         a.insert(a.end(), std::make_move_iterator(b.begin()), std::make_move_iterator(b.end()));
     }
 
@@ -67,7 +67,8 @@ namespace Xuanwu {
         std::unique_ptr<CPUTask> cputask_;
         std::unique_ptr<GPUTask> gputask_;
 
-        std::vector<std::weak_ptr<TaskBase>> depend_tasks_;
+        std::vector<std::weak_ptr<TaskBase>> depend_tasks_; // Strong : must start after previous task finish
+        std::vector<std::weak_ptr<TaskBase>> run_after_tasks_; // Weak : start after previous task start
 
     public:
         ~TaskBase() override;
@@ -129,6 +130,12 @@ namespace Xuanwu {
             return depend_tasks_;
         }
 
+        const auto &RunAfterTasks() const {
+            return run_after_tasks_;
+        }
+
+        void RunAfter(std::vector<TaskPtr> tasks);
+
         void Finish();
 
         CPUTask *GetCPUTask() const;
@@ -168,26 +175,38 @@ namespace Xuanwu {
     };
 
     template<class T>
-    struct DeviceArray : DeviceArrayBase{
-            __device__
-            void Alloc(size_t n) {
-                Malloc(n * sizeof(T));
-            }
-            __device__
-            T* data() { return (T*)ptr; }
+    struct DeviceArray : DeviceArrayBase {
+        __device__
+        void Alloc(size_t n) {
+            Malloc(n * sizeof(T));
+        }
 
-            __device__
-            T* data() const { return (T*)ptr; }
+        __device__
+                T
+        *
 
-            __device__
-            T& operator[](size_t idx) {
-                return data()[idx];
-            }
+        data() { return (T *) ptr; }
 
-            __device__
-            T operator[](size_t idx) const {
-                return data()[idx];
-            }
+        __device__
+                T
+        *
+
+        data() const { return (T *) ptr; }
+
+        __device__
+                T
+        &
+
+        operator[](size_t idx) {
+            return data()[idx];
+        }
+
+        __device__
+                T
+
+        operator[](size_t idx) const {
+            return data()[idx];
+        }
     };
 
     struct LocalArrayGPU {

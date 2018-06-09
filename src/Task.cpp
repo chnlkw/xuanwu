@@ -97,6 +97,10 @@ namespace Xuanwu {
         Append(depend_tasks_, std::move(tasks));
     }
 
+    void TaskBase::RunAfter(std::vector<TaskPtr> tasks) {
+        Append(run_after_tasks_, std::move(tasks));
+    }
+
 
     ArrayBase *GPUContext::MakeArrayBase(size_t bytes) {
         auto data = mm->MakeDataBase(bytes);// std::make_unique<ArrayBase>(bytes, mm->GetAllocatorByDevice(dev));

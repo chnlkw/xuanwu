@@ -10,20 +10,37 @@
 namespace Xuanwu {
 
     void Scheduler::AddTask(const TaskPtr &task) {
-        for (const auto &depend_task_w : task->DependTasks()) {
-            if (auto src = depend_task_w.lock()) {
-                LG(INFO) << "AddEdge " << *src << " -> " << *task;
+        for (const auto &src_w : task->DependTasks()) {
+            if (auto src = src_w.lock()) {
                 if (src->IsFinished())
                     continue;
-                tasks_[src].next_tasks_.push_back(task);
-                tasks_[task].unfinished_depend_tasks_++;
-                tasks_[task].nostart_depend_tasks_++;
-                if (auto dev = tasks_[src].member_chosen_)
-                    tasks_[task].devices_of_depend_tasks_.insert(dev);
+                if (tasks_.find(src) == tasks_.end())
+                    continue;
+                if (tasks_[src].finished)
+                    continue;
+                LG(INFO) << *src << " Finishs before start " << *task;
+                tasks_[src].next_tasks_when_finish_.insert(task);
+                auto dev = tasks_[src].member_chosen_;
+                tasks_[task].finish_depend_.Add(dev, src);
             }
         }
+        for (const auto &src_w : task->RunAfterTasks()) {
+            if (auto src = src_w.lock()) {
+                if (src->IsFinished())
+                    continue;
+                if (tasks_.find(src) == tasks_.end())
+                    continue;
+                if (tasks_[src].started)
+                    continue;
+                LG(INFO) << *src << " Starts before start " << *task;
+                tasks_[src].next_tasks_when_start_.insert(task);
+                auto dev = tasks_[src].member_chosen_;
+                tasks_[task].start_depend_.Add(dev, src);
+            }
+
+        }
         if (CheckTaskReady(task))
-            LG(INFO) << *task << " is ready just added";
+            LG(INFO) << *task << " becomes ready just added";
     }
 
     std::vector<std::pair<TaskPtr, Scheduler::Member>> Scheduler::FetchReadyTasks() {
@@ -34,16 +51,21 @@ namespace Xuanwu {
 
     void Scheduler::RunTask(const TaskPtr &task) {
         auto &node = tasks_[task];
-        for (auto &t : node.next_tasks_) {
-            --tasks_[t].nostart_depend_tasks_;
+        assert(node.member_chosen_);
+        node.started = true;
+        for (auto &t : node.next_tasks_when_start_) {
+            tasks_[t].start_depend_.Del(node.member_chosen_, task);
             if (CheckTaskReady(t))
                 LG(INFO) << *t << " becomes ready when RunTask " << *task;
         }
     }
 
     void Scheduler::FinishTask(const TaskPtr &task) {
-        for (const auto &t : tasks_[task].next_tasks_) {
-            --tasks_[t].unfinished_depend_tasks_;
+        auto &node = tasks_[task];
+        assert(node.member_chosen_);
+        node.finished = true;
+        for (auto &t : node.next_tasks_when_finish_) {
+            tasks_[t].finish_depend_.Del(node.member_chosen_, task);
             if (CheckTaskReady(t))
                 LG(INFO) << *t << " becomes ready when Finish " << *task;
         }
@@ -52,41 +74,42 @@ namespace Xuanwu {
 
     bool Scheduler::CheckTaskReady(const TaskPtr &task) {
         auto &node = tasks_[task];
-        auto Choose = [&](Member mem_chosen) {
-            for (auto &nxt : node.next_tasks_) {
-                LG(DEBUG) << *task << " --> " << *nxt;
-                tasks_[nxt].devices_of_depend_tasks_.insert(mem_chosen);
-                for (auto &devdep : tasks_[nxt].devices_of_depend_tasks_) {
-                    LG(DEBUG) << *nxt << " 's depend_tasks : " << *devdep;
-                }
-            }
-            node.member_chosen_ = f_selector_(task);
-            ready_tasks_.emplace_back(task, node.member_chosen_);
 
-        };
         if (node.member_chosen_)
             return false;
-        if (node.nostart_depend_tasks_ == 0 && node.devices_of_depend_tasks_.size() <= 1) {
-            Member dev = f_selector_(task);
-            LG(DEBUG) << *task << " 's dependent tasks = " << node.devices_of_depend_tasks_.size();
-            for (auto &devdep : node.devices_of_depend_tasks_) {
-                LG(DEBUG) << *task << " 's dependent task run at " << *devdep;
-            }
-            node.devices_of_depend_tasks_.insert(dev);
-            if (node.devices_of_depend_tasks_.size() <= 1) {
-                Choose(dev);
-                LG(INFO) << *task << " is ready to run at " << *node.member_chosen_ << " because of locality";
-                return true;
-            } else {
-                LG(DEBUG) << *task << " choosed " << *dev << " but not ready";
-            }
+
+        LG(DEBUG) << "CheckTaskReady " << *task;
+        LG(DEBUG) << "\tstart_depends " << node;
+        LG(DEBUG) << "\tfinish_depends " << node;
+
+        if (node.start_depend_.NumMembers() > 1 || node.finish_depend_.NumMembers() > 1)
+            return false;
+
+        std::set<Member> members;
+        if (node.start_depend_.NumMembers() == 1)
+            members.insert(node.start_depend_.GetMember());
+        if (node.finish_depend_.NumMembers() == 1)
+            members.insert(node.finish_depend_.GetMember());
+
+        if (members.size() > 1)
+            return false;
+        members.insert(f_selector_(task));
+        if (members.size() > 1)
+            return false;
+        node.member_chosen_ = *members.begin();
+        ready_tasks_.emplace_back(task, node.member_chosen_);
+        LG(INFO) << "\t ready to run at " << *node.member_chosen_;
+
+        for (auto &nxt : node.next_tasks_when_finish_) {
+            tasks_[nxt].finish_depend_.Add(node.member_chosen_, task);
+            LG(DEBUG) << "\t" << *nxt << " finish_depends " << node;
         }
-        if (node.unfinished_depend_tasks_ == 0) {
-            Choose(f_selector_(task));
-            LG(INFO) << *task << " is ready to run at " << *node.member_chosen_;
-            return true;
+        for (auto &nxt : node.next_tasks_when_start_) {
+            tasks_[nxt].start_depend_.Add(node.member_chosen_, task);
+            LG(DEBUG) << "\t" << *nxt << " start_depends " << node;
         }
-        return false;
+
+        return true;
     }
 
     Scheduler::Scheduler(const char *log_name) : SchedulerBase(), log_name_(log_name) {}
@@ -99,5 +122,23 @@ namespace Xuanwu {
     void SchedulerBase::FinishTasks(const std::vector<TaskPtr> &ts) {
         for (auto &t : ts)
             FinishTask(t);
+    }
+
+    void Scheduler::Node::Depend::TaskSet::log(el::base::type::ostream_t &os) const {
+        os << "(";
+        for (auto &t : *this)
+            os << *t << ", ";
+        os << ")";
+    }
+
+    void Scheduler::Node::Depend::log(el::base::type::ostream_t &os) const {
+        os << "[ depends: ";
+        for (auto &p : depends_)
+            os << *p.first << ":" << p.second << " , ";
+        os << " nomenber: " << nomember_ << "]";
+    }
+
+    void Scheduler::Node::log(el::base::type::ostream_t &os) const {
+        os << "Node[ start_depend: " << start_depend_ << " finish_depend: " << finish_depend_ << "]";
     }
 }

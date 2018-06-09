@@ -56,7 +56,6 @@ namespace Xuanwu {
         static std::atomic<bool> ticking;
         assert(!ticking);
         ticking = true;
-        LG(DEBUG) << "Tick";
 
         RunTasks({});
 
@@ -182,24 +181,26 @@ namespace Xuanwu {
             std::map<Runnable *, std::vector<TaskPtr>> r;
             for (auto &d : devices_)
                 r[d.get()] = {};
-            for (auto &p : ready_tasks) {
-                auto &t = p.first;
-                DevicePtr d = dynamic_cast<DevicePtr>(p.second);// tasks_[task].device_chosen_;
-                assert(d);
-                for (auto &m : t->Metas())
-                    if (!m.readable)
-                        data_steps_[m.data->GetUID()].ChooseDevice(d);
-                LG(INFO) << "Engine Run " << *t << " at " << *d;
-                r[d].push_back(p.first);
-                scheduler_->RunTask(p.first);
+            while (!ready_tasks.empty()) {
+                for (auto &p : ready_tasks) {
+                    auto &t = p.first;
+                    auto d = dynamic_cast<DevicePtr>(p.second);// tasks_[task].device_chosen_;
+                    assert(d);
+                    LG(INFO) << "Engine Run " << *t << " at " << *d;
+                    for (auto &m : t->Metas())
+                        if (!m.readable)
+                            data_steps_[m.data->GetUID()].ChooseDevice(d);
+                    r[d].push_back(p.first);
+                    scheduler_->RunTask(p.first);
+                }
+                ready_tasks = scheduler_->FetchReadyTasks();
             }
             for (auto &dev_task : r) {
                 auto complete_tasks = dev_task.first->RunTasks(std::move(dev_task.second));
                 for (auto &t : complete_tasks) {
-                    FinishTask(t);
+                    LG(INFO) << "Finish task " << *t;
                     for (auto &m : t->Metas())
                         data_steps_[m.data->GetUID()].UnregisterTask(t);
-                    LG(INFO) << "Finish task " << *t;
                     t->Finish();
                 }
                 scheduler_->FinishTasks(complete_tasks);
