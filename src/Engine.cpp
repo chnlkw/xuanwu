@@ -18,10 +18,8 @@ namespace Xuanwu {
 
     void DataBase::Wait() const {
         // Wait all tasks finish
-        for (auto &s : tasks_scheduled_) {
-            if (auto t = s.lock()) {
-                t->WaitFinish();
-            }
+        for (auto &t : tasks_scheduled_) {
+            t->WaitFinish();
         }
         tasks_scheduled_.clear();
     }
@@ -204,7 +202,7 @@ namespace Xuanwu {
                     t->Finish();
                 }
                 scheduler_->FinishTasks(complete_tasks);
-                num_running_tasks_-=complete_tasks.size();
+                num_running_tasks_ -= complete_tasks.size();
                 Append(ret, std::move(complete_tasks));
             }
             ready_tasks = scheduler_->FetchReadyTasks();

@@ -6,6 +6,7 @@
 #define XUANWU_XUANWU_H
 
 #include "defs.h"
+#include "Timeline.h"
 
 namespace Xuanwu {
 

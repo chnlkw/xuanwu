@@ -78,6 +78,10 @@ namespace Xuanwu {
 
     void TaskBase::Finish() {
         tmp_datas_.clear();
+        metas_.clear();
+        tmp_datas_.clear();
+        cputask_.reset();
+        gputask_.reset();
         finished = true;
     }
 

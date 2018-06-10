@@ -54,7 +54,7 @@ namespace Xuanwu {
 
                 LG(INFO) << *this << *t << " Run";
 
-                auto cputask = dynamic_cast<CPUTask *>(t.get());
+                auto cputask = dynamic_cast<CPUTask *>(t);
                 if (!cputask)
                     cputask = t->GetCPUTask();
                 assert(cputask);
@@ -92,7 +92,7 @@ namespace Xuanwu {
                 start_time_.first = t;
                 start_time_.second = std::chrono::high_resolution_clock::now();
             }
-            auto cputask = dynamic_cast<CPUTask *>(t.get());
+            auto cputask = dynamic_cast<CPUTask *>(t);
             if (!cputask)
                 cputask = t->GetCPUTask();
             if (cputask) {
@@ -110,6 +110,7 @@ namespace Xuanwu {
                     }
                 std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_time_.second;
                 LG(INFO) << *this << " Prepare OK " << *t << " " << elapsed.count() * 1000 << " ms";
+                Timeline::Add(id_, elapsed.count() * 1000, 0);
                 {
                     std::unique_lock<std::mutex> lk(m_);
                     running_tasks_.push_back(t);
@@ -176,6 +177,7 @@ namespace Xuanwu {
                 CLOG(INFO, "Worker") << *this << " " << *meta.task << " transfer " << tranfer_ms << " ms, "
                                      << " calc "
                                      << calc_ms << " ms";
+                Timeline::Add(id_, tranfer_ms, calc_ms);
 
                 events_unused_.push_back(meta.end_event);
                 events_unused_.push_back(meta.beg_event);
@@ -198,7 +200,7 @@ namespace Xuanwu {
 
             if (meta.step == 1) {
                 CLOG(DEBUG, "Worker") << *this << " try prepare data " << " " << *t;
-                auto gputask = dynamic_cast<GPUTask *>(t.get());
+                auto gputask = dynamic_cast<GPUTask *>(t);
                 if (!gputask)
                     gputask = t->GetGPUTask();
                 if (gputask) {

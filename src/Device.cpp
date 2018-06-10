@@ -78,14 +78,14 @@ namespace Xuanwu {
     }
 
     int CPUDevice::ScoreRunTask(TaskPtr t) {
-        CPUTask *c = dynamic_cast<CPUTask *>(t.get());
+        CPUTask *c = dynamic_cast<CPUTask *>(t);
         if (!c)
             c = t->GetCPUTask();
         return c ? c->score : -10;
     }
 
     int GPUDevice::ScoreRunTask(TaskPtr t) {
-        GPUTask *c = dynamic_cast<GPUTask *>(t.get());
+        GPUTask *c = dynamic_cast<GPUTask *>(t);
         if (!c)
             c = t->GetGPUTask();
         return c ? c->score : -10;

@@ -67,8 +67,8 @@ namespace Xuanwu {
         std::unique_ptr<CPUTask> cputask_;
         std::unique_ptr<GPUTask> gputask_;
 
-        std::vector<std::weak_ptr<TaskBase>> depend_tasks_; // Strong : must start after previous task finish
-        std::vector<std::weak_ptr<TaskBase>> run_after_tasks_; // Weak : start after previous task start
+        std::vector<TaskPtr> depend_tasks_; // Strong : must start after previous task finish
+        std::vector<TaskPtr> run_after_tasks_; // Weak : start after previous task start
 
     public:
         ~TaskBase() override;

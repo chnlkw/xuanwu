@@ -10,33 +10,29 @@
 namespace Xuanwu {
 
     void Scheduler::AddTask(const TaskPtr &task) {
-        for (const auto &src_w : task->DependTasks()) {
-            if (auto src = src_w.lock()) {
-                if (src->IsFinished())
-                    continue;
-                if (tasks_.find(src) == tasks_.end())
-                    continue;
-                if (tasks_[src].finished)
-                    continue;
-                LG(INFO) << *src << " Finishs before start " << *task;
-                tasks_[src].next_tasks_when_finish_.insert(task);
-                auto dev = tasks_[src].member_chosen_;
-                tasks_[task].finish_depend_.Add(dev, src);
-            }
+        for (const auto &src : task->DependTasks()) {
+            if (src->IsFinished())
+                continue;
+            if (tasks_.find(src) == tasks_.end())
+                continue;
+            if (tasks_[src].finished)
+                continue;
+            LG(INFO) << *src << " Finishs before start " << *task;
+            tasks_[src].next_tasks_when_finish_.insert(task);
+            auto dev = tasks_[src].member_chosen_;
+            tasks_[task].finish_depend_.Add(dev, src);
         }
-        for (const auto &src_w : task->RunAfterTasks()) {
-            if (auto src = src_w.lock()) {
-                if (src->IsFinished())
-                    continue;
-                if (tasks_.find(src) == tasks_.end())
-                    continue;
-                if (tasks_[src].started)
-                    continue;
-                LG(INFO) << *src << " Starts before start " << *task;
-                tasks_[src].next_tasks_when_start_.insert(task);
-                auto dev = tasks_[src].member_chosen_;
-                tasks_[task].start_depend_.Add(dev, src);
-            }
+        for (const auto &src : task->RunAfterTasks()) {
+            if (src->IsFinished())
+                continue;
+            if (tasks_.find(src) == tasks_.end())
+                continue;
+            if (tasks_[src].started)
+                continue;
+            LG(INFO) << *src << " Starts before start " << *task;
+            tasks_[src].next_tasks_when_start_.insert(task);
+            auto dev = tasks_[src].member_chosen_;
+            tasks_[task].start_depend_.Add(dev, src);
 
         }
         if (CheckTaskReady(task))
