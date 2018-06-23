@@ -52,6 +52,15 @@ namespace Xuanwu {
             void log(el::base::type::ostream_t &os) const override;
         };
 
+        enum TaskType {
+            Default = -1,
+            Compute = 0,
+            H2D = 1,
+            D2D = 2,
+            D2H = 3
+        };
+        TaskType type_ = Default;
+
     private:
 
         std::vector<Meta> metas_;
@@ -145,6 +154,11 @@ namespace Xuanwu {
         std::string &Name() {
             return name_;
         }
+
+        auto& Type() {
+            return type_;
+        }
+
     };
 
     struct Context {
@@ -154,9 +168,9 @@ namespace Xuanwu {
 
     struct CPUContext : Context {
         CPUDevice *dev;
-        CPUWorker *worker;
+        WorkerPtr worker;
 
-        CPUContext(CPUDevice *dev, CPUWorker *worker) : dev(dev), worker(worker) {}
+        CPUContext(CPUDevice *dev, WorkerPtr worker) : dev(dev), worker(worker) {}
 
         void Copy(Ptr dst, Ptr src, size_t bytes) override;
     };
@@ -240,10 +254,11 @@ namespace Xuanwu {
         MMBase *mm;
         GPUDevice *dev;
         cudaStream_t stream;
-        GPUWorker *worker;
+//        GPUWorker *worker;
+        WorkerPtr worker;
         TaskPtr task;
 
-        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, GPUWorker *worker, TaskPtr task) :
+        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, WorkerPtr worker, TaskPtr task) :
                 mm(mm),
                 dev(dev),
                 stream(stream),

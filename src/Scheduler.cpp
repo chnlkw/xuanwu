@@ -9,7 +9,12 @@
 
 namespace Xuanwu {
 
-    void Scheduler::AddTask(const TaskPtr &task) {
+    void Scheduler::AddTask(const TaskPtr task) {
+        LG(DEBUG) << "AddTask " << *task;
+        LG(DEBUG) << " " << *task << " depend " << task->DependTasks().size();
+        for (const auto &src : task->DependTasks()) {
+            LG(DEBUG) << "  " << *task << " has depend task " << *src;
+        }
         for (const auto &src : task->DependTasks()) {
             if (src->IsFinished())
                 continue;
@@ -22,7 +27,9 @@ namespace Xuanwu {
             auto dev = tasks_[src].member_chosen_;
             tasks_[task].finish_depend_.Add(dev, src);
         }
+        LG(DEBUG) << " " << *task << " runafter " << task->RunAfterTasks().size();
         for (const auto &src : task->RunAfterTasks()) {
+            LG(DEBUG) << "  " << *task << " has run after task " << *src;
             if (src->IsFinished())
                 continue;
             if (tasks_.find(src) == tasks_.end())
@@ -35,6 +42,7 @@ namespace Xuanwu {
             tasks_[task].start_depend_.Add(dev, src);
 
         }
+        LG(DEBUG) << " " << *task << " Try check ready";
         if (CheckTaskReady(task))
             LG(INFO) << *task << " becomes ready just added";
     }
@@ -45,7 +53,7 @@ namespace Xuanwu {
         return std::move(ret);
     }
 
-    void Scheduler::RunTask(const TaskPtr &task) {
+    void Scheduler::RunTask(const TaskPtr task) {
         auto &node = tasks_[task];
         assert(node.member_chosen_);
         node.started = true;
@@ -56,7 +64,7 @@ namespace Xuanwu {
         }
     }
 
-    void Scheduler::FinishTask(const TaskPtr &task) {
+    void Scheduler::FinishTask(const TaskPtr task) {
         auto &node = tasks_[task];
         assert(node.member_chosen_);
         node.finished = true;
@@ -89,10 +97,16 @@ namespace Xuanwu {
 
         if (members.size() > 1)
             return false;
-        members.insert(f_selector_(task));
+        if (!node.member_try_)
+            node.member_try_ = f_selector_(task);
+        members.insert(node.member_try_);
         if (members.size() > 1)
             return false;
         node.member_chosen_ = *members.begin();
+        if (node.member_chosen_ != node.member_try_) {
+            LG(INFO) << node << " choose " << *node.member_chosen_ << " but try " << *node.member_try_;
+//            abort();
+        }
         ready_tasks_.emplace_back(task, node.member_chosen_);
         LG(INFO) << "\t ready to run at " << *node.member_chosen_;
 

@@ -19,6 +19,7 @@ void Timeline::Save(const std::string &fname) {
     std::ofstream f(fname);
     if (!f)
         abort();
+    f << "worker_id,end_time,transfer,calc" << std::endl;
     for (auto &m : s_time_line->metas) {
         f << m.worker_id << ',' << m.end_time << ',' << m.transfer_ms << ',' << m.calc_ms << std::endl;
     }

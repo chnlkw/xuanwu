@@ -189,7 +189,7 @@ namespace Xuanwu {
 
         auto gputask = std::make_unique<GPUTask>([=](GPUContext gpu) {
 //            std::cout << "Run on GPU " << gpu->Device()->Id() << std::endl;
-//            const T *src = src_.ReadAsync(shared_from_this(), gpu->Device(), gpu->Stream()).data();
+//            const T *src = src_.ReadAsync(shared_from_this(), gpu->Device(), gpu->Worker()).data();
             gpu.Copy(dst->GetPtr() + dst_off, src->GetPtr() + src_off, size);
         });
 
@@ -203,6 +203,7 @@ namespace Xuanwu {
         task->AddInputRemote(src);
 //        task->AddInput(src);
         task->AddOutput(dst);
+        task->Type() = TaskBase::D2D;
         AddTask(task);
 
     }

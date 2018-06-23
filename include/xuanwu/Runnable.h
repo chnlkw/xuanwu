@@ -45,11 +45,11 @@ namespace Xuanwu {
     protected:
         using Member = Runnable *;
     public:
-        virtual void AddTask(const TaskPtr &t) = 0;
+        virtual void AddTask(const TaskPtr t) = 0;
 
-        virtual void RunTask(const TaskPtr &t) = 0;
+        virtual void RunTask(const TaskPtr t) = 0;
 
-        virtual void FinishTask(const TaskPtr &t) = 0;
+        virtual void FinishTask(const TaskPtr t) = 0;
 
         void RunTasks(const std::vector<TaskPtr> &ts);
 
@@ -105,6 +105,7 @@ namespace Xuanwu {
             };
 
             Member member_chosen_ = nullptr;
+            Member member_try_ = nullptr;
             Depend start_depend_, finish_depend_;
             std::set<TaskPtr> next_tasks_when_finish_, next_tasks_when_start_;
             bool started = false;
@@ -122,11 +123,11 @@ namespace Xuanwu {
     public:
         Scheduler(const char *log_name);
 
-        void AddTask(const TaskPtr &t) override;
+        void AddTask(const TaskPtr t) override;
 
-        void RunTask(const TaskPtr &task) override;
+        void RunTask(const TaskPtr t) override;
 
-        void FinishTask(const TaskPtr &t) override;
+        void FinishTask(const TaskPtr t) override;
 
         std::vector<std::pair<TaskPtr, Member>> FetchReadyTasks() override;
     };

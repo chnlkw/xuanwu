@@ -243,7 +243,7 @@ namespace Xuanwu {
     }
 
     DevicePtr Engine::DataStep::DeviceChosen() const {
-        assert(steps_.at(0).flag == Flag::Write);
+//        assert(steps_.at(0).flag == Flag::Write);
         return steps_.at(0).device_chosen_;
     }
 }

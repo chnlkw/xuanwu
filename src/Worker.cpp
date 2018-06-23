@@ -85,9 +85,11 @@ namespace Xuanwu {
         std::vector<TaskPtr> ret;
         for (auto &t : tasks)
             LG(INFO) << *this << " Run Task " << *t;
-        Append(tasks_, tasks);
+        for (auto t : tasks) {
+            task_metas_.emplace_back(t, PrepareMeta(t));
+        }
 
-        auto prepare = [&](TaskPtr t) -> bool {
+        auto prepare = [&](TaskPtr t, PrepareMeta &prepare) -> bool {
             if (start_time_.first != t) {
                 start_time_.first = t;
                 start_time_.second = std::chrono::high_resolution_clock::now();
@@ -96,18 +98,23 @@ namespace Xuanwu {
             if (!cputask)
                 cputask = t->GetCPUTask();
             if (cputask) {
+                if (!prepare.Prepare(this, device_)) {
+                    return false;
+                }
+                /*
                 for (auto &m : t->Metas())
                     if (!m.remote) {
                         if (m.readable && !m.remote) {
-                            if (!m.data->ReadAsync(this, device_))
+                            if (!m.data->ReadAsync(this, dev_gpu_))
                                 return false;
 
                         }
                         if (m.writable && m.data->Bytes() > 0 && !m.remote) {
-                            if (!m.data->WriteAsync(this, device_))
+                            if (!m.data->WriteAsync(this, dev_gpu_))
                                 return false;
                         }
                     }
+                    */
                 std::chrono::duration<double> elapsed = std::chrono::high_resolution_clock::now() - start_time_.second;
                 LG(INFO) << *this << " Prepare OK " << *t << " " << elapsed.count() * 1000 << " ms";
                 Timeline::Add(id_, elapsed.count() * 1000, 0);
@@ -121,9 +128,10 @@ namespace Xuanwu {
             return true;
         };
 
-        while (!tasks_.empty()) {
-            if (prepare(tasks_.front())) {
-                tasks_.pop_front();
+        while (!task_metas_.empty()) {
+            auto &tm = task_metas_.front();
+            if (prepare(tm.first, tm.second)) {
+                task_metas_.pop_front();
             } else {
                 break;
             }
@@ -151,7 +159,7 @@ namespace Xuanwu {
 
         for (auto &t : tasks) {
             LG(INFO) << *this << *t << " Run ";
-            Meta meta{GetEvent(), GetEvent(), GetEvent(), GetEvent(), t, t->Metas()};
+            Meta meta{GetEvent(), GetEvent(), GetEvent(), GetEvent(), t, PrepareMeta(t)};
             preparing_queue_.push_back(meta);
         }
         auto GetCompleteTasks = [&]() {
@@ -204,26 +212,10 @@ namespace Xuanwu {
                 if (!gputask)
                     gputask = t->GetGPUTask();
                 if (gputask) {
-                    for (auto it = meta.task_metas.begin(); it != meta.task_metas.end();) {
-                        auto &m = *it;
-                        if (m.readable && !m.remote) {
-                            if (!m.data->ReadAsync(this, device_)) {
-                                ++it;
-                                continue;
-                            }
-                        }
-                        if (m.writable && m.data->Bytes() > 0 && !m.remote) {
-                            if (!m.data->WriteAsync(this, device_)) {
-                                ++it;
-                                continue;
-                            }
-                        }
-                        CLOG(DEBUG, "Worker") << *this << " prepared " << *m.data;
-                        it = meta.task_metas.erase(it);
-                    }
-                    if (meta.task_metas.size()) {
+                    if (!meta.prepare.Prepare(this, device_)) {
                         return GetCompleteTasks();
                     }
+
 #ifndef NDEBUG
                     // make sure data.currentarray is set to this device
                     for (auto &m : t->Metas()) {
@@ -280,4 +272,29 @@ namespace Xuanwu {
         return preparing_queue_.size() + running_queue_.size();
     }
 
+    bool PrepareMeta::Prepare(WorkerPtr worker, DevicePtr dev) {
+        for (auto it = task_metas.begin(); it != task_metas.end();) {
+            auto &m = *it;
+            if (m.readable && !m.remote) {
+                if (!m.data->ReadAsync(worker, dev)) {
+                    ++it;
+                    CLOG(DEBUG, "Worker") << *worker << " NOT prepared " << *m.data;
+                    continue;
+                }
+            }
+            if (m.writable && m.data->Bytes() > 0 && !m.remote) {
+                if (!m.data->WriteAsync(worker, dev)) {
+                    ++it;
+                    CLOG(DEBUG, "Worker") << *worker << " NOT prepared " << *m.data;
+                    continue;
+                }
+            }
+            CLOG(DEBUG, "Worker") << *worker << " prepared " << *m.data;
+            it = task_metas.erase(it);
+        }
+        return task_metas.empty();
+    }
+
+    PrepareMeta::PrepareMeta(TaskPtr t) : task_metas(t->Metas()) {
+    }
 }

@@ -34,11 +34,18 @@ namespace Xuanwu {
         virtual void log(el::base::type::ostream_t &os) const;
     };
 
+    struct PrepareMeta {
+        std::vector<::Xuanwu::TaskBase::Meta> task_metas;
+
+        explicit PrepareMeta(TaskPtr t);
+
+        bool Prepare(WorkerPtr worker, DevicePtr dev);
+    };
 
     class CPUWorker : public WorkerBase {
         bool finished_ = false;
         cudaStream_t stream_;
-        std::deque<TaskPtr> tasks_;
+        std::deque<std::pair<TaskPtr, PrepareMeta>> task_metas_;
         std::vector<TaskPtr> running_tasks_, finished_tasks_;
         std::mutex m_;
         std::condition_variable cv_;
@@ -53,9 +60,9 @@ namespace Xuanwu {
 
         std::vector<TaskPtr> RunTasks(std::vector<TaskPtr> tasks) override;
 
-        bool Empty() const override { return tasks_.empty(); }
+        bool Empty() const override { return task_metas_.empty(); }
 
-        size_t NumRunningTasks() const override { return tasks_.size(); }
+        size_t NumRunningTasks() const override { return task_metas_.size(); }
 
         Event Copy(Ptr dst, Ptr src, size_t bytes) override;
     };
@@ -68,8 +75,7 @@ namespace Xuanwu {
         struct Meta {
             cudaEvent_t beg_event, transfer_event, end_event, mapping_event;
             TaskPtr task;
-            std::vector<::Xuanwu::TaskBase::Meta> task_metas;
-            std::vector<DeviceArrayBase> tmp_arrs;
+            PrepareMeta prepare;
             int step = 0;
         };
         std::deque<Meta> preparing_queue_, running_queue_;

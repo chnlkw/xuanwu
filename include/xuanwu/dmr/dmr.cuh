@@ -41,6 +41,7 @@ namespace Xuanwu {
                 })));
         task->AddInputs({src, idx});
         task->AddOutput(dst);
+        task->Type() = TaskBase::Compute;
         AddTask(task);
 
     }

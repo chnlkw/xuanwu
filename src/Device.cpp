@@ -24,7 +24,10 @@ namespace Xuanwu {
     DeviceBase::DeviceBase() {
         scheduler_ = std::make_unique<Scheduler>("Device");
         scheduler_->SetSelector([this](TaskPtr task) -> Runnable * {
-            return (Runnable *) this->ChooseRunnable(workers_.begin(), workers_.end()).get();
+            if (task->Type() != task->Default && (size_t) task->Type() < workers_.size()) {
+                return workers_[task->Type()].get();
+            } else
+                return (Runnable *) this->ChooseRunnable(workers_.begin(), workers_.end()).get();
         });
     }
 
