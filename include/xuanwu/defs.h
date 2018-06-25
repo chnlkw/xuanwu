@@ -61,7 +61,7 @@ namespace Xuanwu {
     using AllocatorPtr = AllocatorBase *;
     using NodePtr = std::shared_ptr<Node>;
     using DataBasePtr = std::shared_ptr<DataBase>;
-    using TaskPtr = std::shared_ptr<TaskBase>;
+    using TaskPtr = TaskBase*;
 
     namespace detail {
         template<class U, class V>

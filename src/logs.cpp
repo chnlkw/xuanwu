@@ -20,7 +20,12 @@ namespace Xuanwu {
         if (device_pinned_)
             os << "Pin[" << *device_pinned_ << "]";
         os << " (r:";
-        for (auto &r : replicas) os << " " << *r.first << " " << r.second.first->data();
+        for (auto &r : replicas) {
+            os << " " << *r.first << " " << r.second.first->data();
+            if (current_array_ == r.second.first.get()) {
+                os << "[C]";
+            }
+        }
         os << ")";
 //        os << "(i:";
 //        for (auto &i : invalids) os << " " << *i.first << " " << i.second->data();
@@ -33,7 +38,7 @@ namespace Xuanwu {
     }
 
     void WorkerBase::log(el::base::type::ostream_t &os) const {
-        os << "Worker[" << id_ << ", " << *device_ << "]";
+        os << "Stream[" << id_ << ", " << *device_ << "]";
     }
 
     void CPUDevice::log(el::base::type::ostream_t &os) const {

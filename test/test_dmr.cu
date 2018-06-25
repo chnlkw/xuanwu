@@ -161,6 +161,7 @@ __global__ void local_create_kernel(DeviceArray<int> *arr_ptr) {
         arr[i] = i;
 }
 
+/*
 TEST(Xuanwu, LocalCreateInTask) {
     Data<int> sz(1);
     Data<int *> ptr(1);
@@ -179,6 +180,7 @@ TEST(Xuanwu, LocalCreateInTask) {
     }
     while (Xuanwu::Tick());
 }
+*/
 
 __global__
 void accumulate_kernel(int *arr, int *sum) {

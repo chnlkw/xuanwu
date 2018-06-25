@@ -78,6 +78,10 @@ namespace Xuanwu {
 
     void TaskBase::Finish() {
         tmp_datas_.clear();
+        metas_.clear();
+        tmp_datas_.clear();
+        cputask_.reset();
+        gputask_.reset();
         finished = true;
     }
 
@@ -93,9 +97,14 @@ namespace Xuanwu {
         tmp_datas_.push_back(std::move(data));
     }
 
-    void TaskBase::AddTempDataMapping(LocalArrayGPU arr, DataBasePtr d) {
-        tmp_data_mapping_.emplace_back(arr, d);
+    void TaskBase::AddDependency(std::vector<TaskPtr> tasks) {
+        Append(depend_tasks_, std::move(tasks));
     }
+
+    void TaskBase::RunAfter(std::vector<TaskPtr> tasks) {
+        Append(run_after_tasks_, std::move(tasks));
+    }
+
 
     ArrayBase *GPUContext::MakeArrayBase(size_t bytes) {
         auto data = mm->MakeDataBase(bytes);// std::make_unique<ArrayBase>(bytes, mm->GetAllocatorByDevice(dev));
@@ -107,4 +116,5 @@ namespace Xuanwu {
     void CPUContext::Copy(Ptr dst, Ptr src, size_t bytes) {
         worker->Copy(dst, src, bytes);
     }
+
 }

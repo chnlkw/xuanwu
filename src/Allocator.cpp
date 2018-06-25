@@ -89,13 +89,13 @@ namespace Xuanwu {
             for (auto p : m_) {
                 os << "\t\t" << ptr_ + p.first << " " << p.second << '\n';
             }
+            LOG(FATAL) << os.str();
 
             throw std::runtime_error(os.str().c_str());
         }
         m_.emplace(off, size);
         allocated_ += size;
-        LG(DEBUG) << "PreAllocator: " << " Alloc=" << bytes_to_str(size) << " ptr_ = " << ptr_ << " off = "
-                  << off;
+        LG(DEBUG) << "PreAllocator: " << " Alloc=" << bytes_to_str(size) << " ptr_ = " << ptr_ + off;
         LG(INFO) << "PreAllocator: " << "Total=" << bytes_to_str(size_) << " Alloc=" << bytes_to_str(size)
                  << " allocated=" << bytes_to_str(allocated_) << " remain=" << bytes_to_str(size_ - allocated_);
         return (char *) ptr_ + off;

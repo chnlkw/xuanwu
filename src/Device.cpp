@@ -21,31 +21,13 @@ namespace Xuanwu {
         CUDA_CALL(cudaGetDeviceProperties, &deviceProp, gpu_id_);
     }
 
-    std::vector<TaskPtr> DeviceBase::GetCompleteTasks() {
-        auto ready_tasks = scheduler_->FetchReadyTasks();
-        while (ready_tasks.size()) {
-            for (auto &p : ready_tasks) {
-                auto &t = p.first;
-                p.second->RunTask(t);
-                scheduler_->RunTask(t);
-            }
-            ready_tasks = scheduler_->FetchReadyTasks();
-        }
-        std::vector<TaskPtr> ret;
-        for (auto &w : workers_) {
-            auto r = w->GetCompleteTasks();
-            ret.insert(ret.end(), r.begin(), r.end());
-        }
-        for (auto &r : ret) {
-            scheduler_->FinishTask(r);
-        }
-        return ret;
-    }
-
     DeviceBase::DeviceBase() {
-        scheduler_ = std::make_unique<Scheduler>();
+        scheduler_ = std::make_unique<Scheduler>("Device");
         scheduler_->SetSelector([this](TaskPtr task) -> Runnable * {
-            return (Runnable *) this->ChooseRunnable(workers_.begin(), workers_.end()).get();
+            if (task->Type() != task->Default && (size_t) task->Type() < workers_.size()) {
+                return workers_[task->Type()].get();
+            } else
+                return (Runnable *) this->ChooseRunnable(workers_.begin(), workers_.end()).get();
         });
     }
 
@@ -69,20 +51,44 @@ namespace Xuanwu {
         return ret;
     }
 
-    void DeviceBase::RunTask(TaskPtr t) {
-        LG(INFO) << *this << " Run " << *t;
-        scheduler_->AddTask(t);
+    std::vector<TaskPtr> DeviceBase::RunTasks(std::vector<TaskPtr> tasks) {
+        std::vector<TaskPtr> ret;
+
+        for (auto &t : tasks) {
+            LG(INFO) << *this << " Run " << *t;
+            scheduler_->AddTask(t);
+        }
+
+        bool first = true;
+        auto ready_tasks = scheduler_->FetchReadyTasks();
+        while (first || !ready_tasks.empty()) {
+            first = false;
+            std::map<Runnable *, std::vector<TaskPtr>> r;
+            for (auto &w : workers_)
+                r[w.get()] = {};
+            for (auto &p : ready_tasks) {
+                r[p.second].push_back(p.first);
+                scheduler_->RunTask(p.first);
+            }
+            for (auto &r_ts : r) {
+                auto complete_tasks = r_ts.first->RunTasks(std::move(r_ts.second));
+                scheduler_->FinishTasks(complete_tasks);
+                Append(ret, std::move(complete_tasks));
+            }
+            ready_tasks = scheduler_->FetchReadyTasks();
+        }
+        return ret;
     }
 
     int CPUDevice::ScoreRunTask(TaskPtr t) {
-        CPUTask *c = dynamic_cast<CPUTask *>(t.get());
+        CPUTask *c = dynamic_cast<CPUTask *>(t);
         if (!c)
             c = t->GetCPUTask();
         return c ? c->score : -10;
     }
 
     int GPUDevice::ScoreRunTask(TaskPtr t) {
-        GPUTask *c = dynamic_cast<GPUTask *>(t.get());
+        GPUTask *c = dynamic_cast<GPUTask *>(t);
         if (!c)
             c = t->GetGPUTask();
         return c ? c->score : -10;

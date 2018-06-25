@@ -23,13 +23,11 @@ namespace Xuanwu {
 
         virtual int ScoreRunTask(TaskPtr t);
 
-        std::vector<TaskPtr> GetCompleteTasks() override;
+        std::vector<TaskPtr> RunTasks(std::vector<TaskPtr> tasks) override;
 
         const auto &Workers() const {
             return workers_;
         }
-
-        void RunTask(TaskPtr t) override;
 
         size_t NumRunningTasks() const override;
 

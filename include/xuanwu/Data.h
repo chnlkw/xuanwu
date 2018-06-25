@@ -20,7 +20,7 @@ namespace Xuanwu {
 
         size_t bytes_ = 0;
 
-        mutable std::deque<std::weak_ptr<TaskBase>> tasks_scheduled_;
+        mutable std::deque<TaskPtr> tasks_scheduled_;
 
         void RegisterTask(const TaskPtr &t);
 

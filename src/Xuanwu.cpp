@@ -55,6 +55,7 @@ namespace Xuanwu {
         add_task_func_ = [this](TaskPtr t) {
             GetEngine()->AddTask(std::move(t));
         };
+        Timeline::Create();
     }
 
     void Xuanwu::AddTask(TaskPtr t) {

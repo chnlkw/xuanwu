@@ -6,15 +6,16 @@
 #define DMR_RUNNABLE_H
 
 #include "defs.h"
+#include <cassert>
 
 namespace Xuanwu {
     class Runnable : public el::Loggable {
     public:
-        virtual void RunTask(TaskPtr) = 0;
+        /// @param tasks [in] Tasks to run
+        /// @returns Completed tasks
+        virtual std::vector<TaskPtr> RunTasks(std::vector<TaskPtr> tasks) = 0;
 
         virtual size_t NumRunningTasks() const = 0;
-
-        virtual std::vector<TaskPtr> GetCompleteTasks() = 0;
 
         virtual bool Empty() const {
             return NumRunningTasks() == 0;
@@ -42,13 +43,17 @@ namespace Xuanwu {
 
     class SchedulerBase {
     protected:
-        using Member = Runnable*;
+        using Member = Runnable *;
     public:
-        virtual void AddTask(const TaskPtr &t) = 0;
+        virtual void AddTask(const TaskPtr t) = 0;
 
-        virtual void RunTask(const TaskPtr &t) = 0;
+        virtual void RunTask(const TaskPtr t) = 0;
 
-        virtual void FinishTask(const TaskPtr &t) = 0;
+        virtual void FinishTask(const TaskPtr t) = 0;
+
+        void RunTasks(const std::vector<TaskPtr> &ts);
+
+        void FinishTasks(const std::vector<TaskPtr> &ts);
 
         virtual std::vector<std::pair<TaskPtr, Member>> FetchReadyTasks() = 0;
 
@@ -60,24 +65,69 @@ namespace Xuanwu {
     };
 
     class Scheduler : public SchedulerBase {
-        struct Node {
-            size_t unfinished_depend_tasks_ = 0;
-            size_t nostart_depend_tasks_ = 0;
-            std::set<Member> devices_of_depend_tasks_;
+        struct Node : el::Loggable {
+            struct Depend : el::Loggable {
+                struct TaskSet : std::set<TaskPtr>, el::Loggable {
+                    void log(el::base::type::ostream_t &os) const override;
+                };
+                std::map<Member, TaskSet> depends_;
+                TaskSet nomember_;
+
+                void Add(Member m, const TaskPtr &t) {
+                    if (m) {
+                        if (nomember_.count(t))
+                            nomember_.erase(t);
+                        depends_[m].insert(t);
+                    } else {
+                        nomember_.insert(t);
+                    }
+                }
+
+                void Del(Member m, const TaskPtr &t) {
+                    assert(depends_.find(m) != depends_.end());
+                    assert(depends_[m].find(t) != depends_[m].end());
+                    depends_[m].erase(t);
+                    if (depends_[m].empty()) {
+                        depends_.erase(m);
+                    }
+                }
+
+                size_t NumMembers() const {
+                    return depends_.size() + nomember_.size() * 100;
+                }
+
+                Member GetMember() const {
+                    assert(depends_.size() > 0);
+                    return depends_.begin()->first;
+                }
+
+                void log(el::base::type::ostream_t &os) const override;
+            };
+
             Member member_chosen_ = nullptr;
-            std::vector<TaskPtr> next_tasks_;
+            Member member_try_ = nullptr;
+            Depend start_depend_, finish_depend_;
+            std::set<TaskPtr> next_tasks_when_finish_, next_tasks_when_start_;
+            bool started = false;
+            bool finished = false;
+
+            void log(el::base::type::ostream_t &os) const override;
         };
+
         std::map<TaskPtr, Node> tasks_;
         std::vector<std::pair<TaskPtr, Member>> ready_tasks_;
+        const char *log_name_;
 
-        void CheckTaskReady(const TaskPtr &task);
+        bool CheckTaskReady(const TaskPtr &task);
 
     public:
-        void AddTask(const TaskPtr &t) override;
+        Scheduler(const char *log_name);
 
-        void RunTask(const TaskPtr &t) override;
+        void AddTask(const TaskPtr t) override;
 
-        void FinishTask(const TaskPtr &t) override;
+        void RunTask(const TaskPtr t) override;
+
+        void FinishTask(const TaskPtr t) override;
 
         std::vector<std::pair<TaskPtr, Member>> FetchReadyTasks() override;
     };

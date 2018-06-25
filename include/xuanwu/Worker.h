@@ -34,15 +34,23 @@ namespace Xuanwu {
         virtual void log(el::base::type::ostream_t &os) const;
     };
 
+    struct PrepareMeta {
+        std::vector<::Xuanwu::TaskBase::Meta> task_metas;
+
+        explicit PrepareMeta(TaskPtr t);
+
+        bool Prepare(WorkerPtr worker, DevicePtr dev);
+    };
 
     class CPUWorker : public WorkerBase {
         bool finished_ = false;
         cudaStream_t stream_;
-        std::deque<TaskPtr> tasks_;
+        std::deque<std::pair<TaskPtr, PrepareMeta>> task_metas_;
         std::vector<TaskPtr> running_tasks_, finished_tasks_;
         std::mutex m_;
         std::condition_variable cv_;
         std::thread worker_thread_;
+        std::pair<TaskPtr, std::chrono::time_point<std::chrono::high_resolution_clock> > start_time_;
 
         void start_worker();
     public:
@@ -50,13 +58,11 @@ namespace Xuanwu {
 
         ~CPUWorker();
 
-        void RunTask(TaskPtr t) override;
+        std::vector<TaskPtr> RunTasks(std::vector<TaskPtr> tasks) override;
 
-        bool Empty() const override { return tasks_.empty(); }
+        bool Empty() const override { return task_metas_.empty(); }
 
-        std::vector<TaskPtr> GetCompleteTasks() override;
-
-        size_t NumRunningTasks() const override { return tasks_.size(); }
+        size_t NumRunningTasks() const override { return task_metas_.size(); }
 
         Event Copy(Ptr dst, Ptr src, size_t bytes) override;
     };
@@ -69,17 +75,16 @@ namespace Xuanwu {
         struct Meta {
             cudaEvent_t beg_event, transfer_event, end_event, mapping_event;
             TaskPtr task;
-            std::vector<::Xuanwu::TaskBase::Meta> task_metas;
-            std::vector<DeviceArrayBase> tmp_arrs;
+            PrepareMeta prepare;
             int step = 0;
         };
-        std::deque<Meta> queue_;
+        std::deque<Meta> preparing_queue_, running_queue_;
 
     public:
         explicit GPUWorker(GPUDevice *gpu);
 
         bool Empty() const override {
-            return queue_.empty();
+            return preparing_queue_.empty() && running_queue_.empty();
         }
 
         const cudaStream_t &Stream() const {
@@ -88,15 +93,11 @@ namespace Xuanwu {
 
     private:
 
-        void RunTask(TaskPtr t) override;
+        std::vector<TaskPtr> RunTasks(std::vector<TaskPtr> tasks) override;
 
-        size_t NumRunningTasks() const override {
-            return queue_.size();
-        }
+        size_t NumRunningTasks() const override;
 
         cudaEvent_t GetEvent();
-
-        std::vector<TaskPtr> GetCompleteTasks() override;
 
         Event Copy(Ptr dst, Ptr src, size_t bytes) override;
 

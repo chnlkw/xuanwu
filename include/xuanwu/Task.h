@@ -26,6 +26,11 @@
 
 namespace Xuanwu {
 
+    template<class V1, class V2>
+    void Append(V1 &a, V2 b) {
+        a.insert(a.end(), std::make_move_iterator(b.begin()), std::make_move_iterator(b.end()));
+    }
+
     class TaskBase : public std::enable_shared_from_this<TaskBase>, public el::Loggable {
     public:
         struct Meta : public el::Loggable {
@@ -47,11 +52,20 @@ namespace Xuanwu {
             void log(el::base::type::ostream_t &os) const override;
         };
 
+        enum TaskType {
+            Default = -1,
+            Compute = 0,
+            H2D = 1,
+            D2D = 2,
+            D2H = 3
+        };
+        TaskType type_ = Default;
+
     private:
 
         std::vector<Meta> metas_;
         std::vector<DataBasePtr> tmp_datas_;
-        std::vector<std::pair<LocalArrayGPU, DataBasePtr>> tmp_data_mapping_;
+//        std::vector<std::pair<LocalArrayGPU, DataBasePtr>> tmp_data_mapping_;
         bool finished = false;
 
         friend class Engine;
@@ -62,7 +76,8 @@ namespace Xuanwu {
         std::unique_ptr<CPUTask> cputask_;
         std::unique_ptr<GPUTask> gputask_;
 
-        std::vector<std::weak_ptr<TaskBase>> depend_tasks_;
+        std::vector<TaskPtr> depend_tasks_; // Strong : must start after previous task finish
+        std::vector<TaskPtr> run_after_tasks_; // Weak : start after previous task start
 
     public:
         ~TaskBase() override;
@@ -114,18 +129,21 @@ namespace Xuanwu {
 
         void AddTempData(DataBasePtr data);
 
-        void AddTempDataMapping(LocalArrayGPU, DataBasePtr);
+//        void AddTempDataMapping(LocalArrayGPU, DataBasePtr);
 
-        auto &GetTempDataMappings() { return tmp_data_mapping_; }
+//        auto &GetTempDataMappings() { return tmp_data_mapping_; }
 
-        void AddDependency(std::vector<TaskPtr> tasks) {
-            depend_tasks_.insert(depend_tasks_.end(), std::make_move_iterator(tasks.begin()),
-                                 std::make_move_iterator(tasks.end()));
-        }
+        void AddDependency(std::vector<TaskPtr> tasks);
 
         const auto &DependTasks() const {
             return depend_tasks_;
         }
+
+        const auto &RunAfterTasks() const {
+            return run_after_tasks_;
+        }
+
+        void RunAfter(std::vector<TaskPtr> tasks);
 
         void Finish();
 
@@ -136,6 +154,11 @@ namespace Xuanwu {
         std::string &Name() {
             return name_;
         }
+
+        auto& Type() {
+            return type_;
+        }
+
     };
 
     struct Context {
@@ -145,9 +168,9 @@ namespace Xuanwu {
 
     struct CPUContext : Context {
         CPUDevice *dev;
-        CPUWorker *worker;
+        WorkerPtr worker;
 
-        CPUContext(CPUDevice *dev, CPUWorker *worker) : dev(dev), worker(worker) {}
+        CPUContext(CPUDevice *dev, WorkerPtr worker) : dev(dev), worker(worker) {}
 
         void Copy(Ptr dst, Ptr src, size_t bytes) override;
     };
@@ -166,26 +189,38 @@ namespace Xuanwu {
     };
 
     template<class T>
-    struct DeviceArray : DeviceArrayBase{
-            __device__
-            void Alloc(size_t n) {
-                Malloc(n * sizeof(T));
-            }
-            __device__
-            T* data() { return (T*)ptr; }
+    struct DeviceArray : DeviceArrayBase {
+        __device__
+        void Alloc(size_t n) {
+            Malloc(n * sizeof(T));
+        }
 
-            __device__
-            T* data() const { return (T*)ptr; }
+        __device__
+                T
+        *
 
-            __device__
-            T& operator[](size_t idx) {
-                return data()[idx];
-            }
+        data() { return (T *) ptr; }
 
-            __device__
-            T operator[](size_t idx) const {
-                return data()[idx];
-            }
+        __device__
+                T
+        *
+
+        data() const { return (T *) ptr; }
+
+        __device__
+                T
+        &
+
+        operator[](size_t idx) {
+            return data()[idx];
+        }
+
+        __device__
+                T
+
+        operator[](size_t idx) const {
+            return data()[idx];
+        }
     };
 
     struct LocalArrayGPU {
@@ -219,10 +254,11 @@ namespace Xuanwu {
         MMBase *mm;
         GPUDevice *dev;
         cudaStream_t stream;
-        GPUWorker *worker;
+//        GPUWorker *worker;
+        WorkerPtr worker;
         TaskPtr task;
 
-        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, GPUWorker *worker, TaskPtr task) :
+        GPUContext(MMBase *mm, GPUDevice *dev, cudaStream_t stream, WorkerPtr worker, TaskPtr task) :
                 mm(mm),
                 dev(dev),
                 stream(stream),
@@ -232,6 +268,7 @@ namespace Xuanwu {
 
         ArrayBase *MakeArrayBase(size_t bytes);
 
+        /*
         template<class T>
         DeviceArray<T> *MakeLocalMapping(Data<T> &d) {
             LocalArray<T> g;
@@ -239,6 +276,7 @@ namespace Xuanwu {
             task->AddTempDataMapping(g, d);
             return g.GetArrPtr();
         }
+         */
 
         template<class T>
         T *Alloc(size_t count) {
