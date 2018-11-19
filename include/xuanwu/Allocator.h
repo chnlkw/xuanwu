@@ -210,6 +210,7 @@ namespace Xuanwu {
     class PreAllocator : public AllocatorBase {
         size_t size_;
         size_t allocated_;
+        size_t allocated_peak_;
         size_t align_;
         void *ptr_;
         std::map<off_t, size_t> m_;

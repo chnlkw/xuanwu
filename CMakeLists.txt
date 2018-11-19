@@ -4,7 +4,7 @@ project(xuanwu LANGUAGES CXX CUDA)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake_modules)
 
-find_package(CUDA)
+#find_package(CUDA)
 
 find_package(NUMA)
 

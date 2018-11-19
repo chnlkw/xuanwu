@@ -93,11 +93,17 @@ namespace Xuanwu {
 
             throw std::runtime_error(os.str().c_str());
         }
+        if (m_.count(off))
+            LOG(FATAL) << "PreAllocator already allocated at " << off << " : " << m_[off] << " when allocating size = " << size;
         m_.emplace(off, size);
         allocated_ += size;
         LG(DEBUG) << "PreAllocator: " << " Alloc=" << bytes_to_str(size) << " ptr_ = " << ptr_ + off;
         LG(INFO) << "PreAllocator: " << "Total=" << bytes_to_str(size_) << " Alloc=" << bytes_to_str(size)
                  << " allocated=" << bytes_to_str(allocated_) << " remain=" << bytes_to_str(size_ - allocated_);
+        if (allocated_ > allocated_peak_) {
+            allocated_peak_ = allocated_;
+            LG(WARNING) << "PreAllocator:  Alloc Peak = " << bytes_to_str(allocated_peak_);
+        }
         return (char *) ptr_ + off;
     }
 
