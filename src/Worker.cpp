@@ -28,10 +28,12 @@ namespace Xuanwu {
     CPUWorker::CPUWorker(CPUDevice &cpu) :
             WorkerBase(&cpu),
             worker_thread_([this]() { start_worker(); }) {
+        CUDA_CALL(cudaSetDevice, 0);
         CUDA_CALL(cudaStreamCreate, &stream_);
     }
 
     Event CPUWorker::Copy(Ptr dst, Ptr src, size_t bytes) {
+        CUDA_CALL(cudaSetDevice, 0);
         LG(INFO) << *this << " copy " << src << " to " << dst << " bytes=" << bytes;
         return CPUCopy(dst, src, bytes, stream_);
     }
