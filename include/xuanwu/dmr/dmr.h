@@ -29,8 +29,11 @@
 #define LG(x) CLOG(x, "DMR")
 
 namespace Xuanwu {
-    template<class VData, class VOff>
-    void ShuffleByIdx(VData &p_dst, const VData &p_src, const VOff &p_idx, std::string);
+//    template<class VData, class VOff>
+//    void ShuffleByIdx(VData &p_dst, const VData &p_src, const VOff &p_idx, std::string);
+
+    template<class T, class TOff>
+    void ShuffleByIdx(Data<T>& dst, const Data<T>& src, const Data<TOff>& idx, std::string name);
 
     template<class T, class TOff>
     void ShuffleByIdx(std::vector<T> &p_dst, const std::vector<T> &p_src, const std::vector<TOff> &p_idx, std::string) {
