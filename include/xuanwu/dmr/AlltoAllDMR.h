@@ -69,9 +69,9 @@ namespace Xuanwu {
                 value_out.push_back(Renew(value_in[i], recv_sum_[i]));
                 assert(value_out.back().size() == recv_sum_[i]);
             }
-            for (size_t i = 0; i < size_; i++) {
-                for (size_t k = 0; k < size_; k++) {
-                    size_t j = (i + k) % size_;
+            for (size_t k = 0; k < size_; k++) {
+                for (size_t i = 0; i < size_; i++) {
+                    size_t j = i ^k;
                     Copy(value_in[j], send_offs_[j][i], value_out[i], recv_offs_[i][j], send_counts_[j][i]);
                 }
             }
