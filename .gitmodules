@@ -2,8 +2,5 @@
 	path = googletest
 	url = https://github.com/google/googletest.git
 [submodule "cmake-modules"]
-	path = cmake-modules
-	url = git@github.com:chnlkw/cmake-modules.git
-[submodule "cmake_modules"]
 	path = cmake_modules
-	url = git@github.com:chnlkw/cmake_modules.git
+	url = https://github.com/chnlkw/cmake_modules.git
