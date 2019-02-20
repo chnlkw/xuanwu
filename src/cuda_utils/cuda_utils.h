@@ -22,6 +22,13 @@
     cudaEnsureSuccess(status, #cuda_function, true, __FILE__, __LINE__); \
 }
 
+
+#define CUDA_CHECK_NO_SYNC() \
+{\
+    cudaError_t status = cudaGetLastError();\
+    cudaEnsureSuccess(status, "last check", true, __FILE__, __LINE__); \
+}
+
 #define CUDA_CHECK() \
 {\
     cudaDeviceSynchronize();\
