@@ -12,22 +12,24 @@ namespace Xuanwu {
 #define LG(x) CLOG(x, "Task")
 
     TaskBase::~TaskBase() {
-        LG(INFO) << "Destory " << Name();
+        LG(INFO) << "Destory " << *this;
+        LOG_IF(!finished, FATAL) << "Not Finsihed " << *this;
     }
 
     TaskBase::TaskBase(std::string name, std::unique_ptr<CPUTask> cputask, std::unique_ptr<GPUTask> gputask) :
             name_(std::move(name)), cputask_(std::move(cputask)), gputask_(std::move(gputask)) {
         static int g_seq = 0;
         seq = g_seq++;
+        LG(INFO) << "Create " << *this;
     }
 
     TaskBase::TaskBase(std::string name) :
             name_(std::move(name)) {
-        LG(INFO) << "Create " << Name();
+        LG(INFO) << "Create " << *this;
     }
 
     void TaskBase::AddInputRemote(DataBasePtr data) {
-        LG(INFO) << "AddInputRemote " << *data;
+        LG(INFO) << *this << " AddInputRemote " << *data;
         metas_.emplace_back(data, true, false, true);
     }
 
@@ -37,7 +39,7 @@ namespace Xuanwu {
     }
 
     void TaskBase::AddOutputRemote(DataBasePtr data) {
-        LG(INFO) << "AddInputRemote " << *data;
+        LG(INFO) << *this << "AddInputRemote " << *data;
         metas_.emplace_back(data, false, true, true);
     }
 
@@ -47,7 +49,7 @@ namespace Xuanwu {
     }
 
     void TaskBase::AddInput(DataBasePtr data) {
-        LG(INFO) << "AddInput " << *data;
+        LG(INFO) << *this << "AddInput " << *data;
         metas_.emplace_back(data, true, false, false);
     }
 
@@ -57,7 +59,7 @@ namespace Xuanwu {
     }
 
     void TaskBase::AddOutput(DataBasePtr data) {
-        LG(INFO) << "AddOutput " << *data;
+        LG(INFO) << *this << "AddOutput " << *data;
         metas_.emplace_back(data, false, true, false);
     }
 
@@ -67,7 +69,7 @@ namespace Xuanwu {
     }
 
     void TaskBase::AddInOutput(DataBasePtr data) {
-        LG(INFO) << "AddInOutput " << *data;
+        LG(INFO) << *this << "AddInOutput " << *data;
         metas_.emplace_back(data, true, true, false);
     }
 
@@ -77,6 +79,7 @@ namespace Xuanwu {
     }
 
     void TaskBase::Finish() {
+        LG(INFO) << *this << " Finish ";
         tmp_datas_.clear();
         metas_.clear();
         tmp_datas_.clear();

@@ -145,7 +145,7 @@ namespace Xuanwu {
 
         void RunAfter(std::vector<TaskPtr> tasks);
 
-        void Finish();
+        virtual void Finish() final;
 
         CPUTask *GetCPUTask() const;
 
