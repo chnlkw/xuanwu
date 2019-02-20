@@ -71,17 +71,26 @@ namespace Xuanwu {
             off &= ~(align_ - 1);
             return off;
         };
-        off_t off = 0;
+        size_t best = -1, best_off = -1;
+        auto check = [&](size_t beg, size_t end) {
+            if (end - beg < size)
+                return;
+            if (best == -1 || best > end - beg) {
+                best = end - beg;
+                best_off = beg;
+            }
+        };
+        off_t last_end = 0;
         for (auto p : m_) {
             auto beg = p.first;
             auto end = p.first + p.second;
-            if (off + size > beg) {
-                off = align_up(end);
-            } else {
-                break;
-            }
+            check(last_end, beg);
+            last_end = align_up(end);
         }
-        if (off + size > size_) {
+        check(last_end, size_);
+        off_t off = best_off;
+        //if (off + size > size_) {
+        if (off == -1) {
             std::ostringstream os;
             os << "PreAllocator :: not enough memory when allocating " << bytes_to_str(size) << " remain "
                << bytes_to_str(size_ - allocated_) << " total " << bytes_to_str(size_) << '\n';
@@ -94,7 +103,8 @@ namespace Xuanwu {
             throw std::runtime_error(os.str().c_str());
         }
         if (m_.count(off))
-            LOG(FATAL) << "PreAllocator already allocated at " << off << " : " << m_[off] << " when allocating size = " << size;
+            LOG(FATAL) << "PreAllocator already allocated at " << off << " : " << m_[off] << " when allocating size = "
+                       << size;
         m_.emplace(off, size);
         allocated_ += size;
         LG(DEBUG) << "PreAllocator: " << " Alloc=" << bytes_to_str(size) << " ptr_ = " << ptr_ + off;
